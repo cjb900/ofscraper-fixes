@@ -2,6 +2,9 @@
 
 This repository contains utility scripts designed to help fix common issues with ofScraper installations and configurations. The tools provide both command-line (CLI) and graphical (GUI) interfaces to streamline the setup process. If you can not get this to run or have issues with the fixes not working you will have to follow the written guides in announcements on our [discord](https://discord.gg/wN7uxEVHRK) or check the logs for ofecraper to see what is failing/not working. 
 
+![image](https://github.com/user-attachments/assets/2270602b-dc1d-4f08-af67-ca6263bec100)
+
+
 ## Overview
 
 These scripts help with:
