@@ -9,7 +9,11 @@ import tkinter as tk
 from tkinter import messagebox, simpledialog, ttk
 
 # Use Pillow for robust image loading (supports more PNG formats)
-from PIL import Image, ImageTk
+try:
+    from PIL import Image, ImageTk
+    PIL_AVAILABLE = True
+except ImportError:
+    PIL_AVAILABLE = False
 
 RECOMMENDED_AIOLIMITER = "aiolimiter==1.1.0 --force"
 RECOMMENDED_DYNAMIC_GENERIC_URL = "https://raw.githubusercontent.com/deviint/onlyfans-dynamic-rules/main/dynamicRules.json"
@@ -22,15 +26,19 @@ class SetupOfScraperApp:
         self.root.title("Setup ofScraper")
         self.root.geometry("600x600")
 
-        # === Attempt to load the PNG with Pillow ===
-        try:
-            logo_image = Image.open("starryai_0tvo7.png")
-            # If needed, resize to 60×60, etc.
-            logo_image = logo_image.resize((60, 60), Image.Resampling.LANCZOS)
-            self.logo_img = ImageTk.PhotoImage(logo_image)
-        except Exception as e:
+        # === Attempt to load an image (if available) ===
+        # Change filename or resizing if needed
+        if PIL_AVAILABLE:
+            try:
+                logo_image = Image.open("starryai_0tvo7.png")
+                # Example resize to 60×60
+                logo_image = logo_image.resize((60, 60), Image.Resampling.LANCZOS)
+                self.logo_img = ImageTk.PhotoImage(logo_image)
+            except Exception as e:
+                self.logo_img = None
+                print(f"Could not load starryai_0tvo7.png: {e}")
+        else:
             self.logo_img = None
-            print(f"Could not load starryai_0tvo7.png: {e}")
 
         self.create_widgets()
 
@@ -165,21 +173,16 @@ class SetupOfScraperApp:
         self.status_label.config(state=tk.NORMAL)
         self.status_label.insert(tk.END, message + "\n")
         self.status_label.config(state=tk.DISABLED)
-        self.status_label.see(tk.END)  # Scroll to the end of the text
+        self.status_label.see(tk.END)  # Scroll to the end
 
-    #
-    #  UPDATED check_python_version method
-    #
     def check_python_version(self):
         major, minor, micro = sys.version_info.major, sys.version_info.minor, sys.version_info.micro
         message = f"You are currently using Python {major}.{minor}.{micro}"
 
-        # If outside the recommended 3.11.x range, prompt for 3.11.6
         if (major < 3) or (major == 3 and minor < 11) or (major == 3 and minor >= 13):
             message += "\nYour Python version is not in the 3.11.x range."
             message += "\nWe recommend installing Python 3.11.6."
         else:
-            # Now we know it's 3.11.x but not <3.11 or >=3.13
             if micro == 6:
                 message += "\nYou are on Python 3.11.6, which is fully recommended!"
             else:
@@ -229,6 +232,46 @@ class SetupOfScraperApp:
             self.install_type = None
             self.update_status("'ofscraper' not detected via pip or pipx.")
 
+            # --- OFFER TO INSTALL if not found ---
+            choice = messagebox.askyesno(
+                "Install ofscraper",
+                "ofscraper is not detected.\nWould you like to install it now?"
+            )
+            if choice:
+                method_choice = simpledialog.askinteger(
+                    "Install ofscraper",
+                    "How would you like to install ofscraper?\n\n"
+                    "1) pip\n"
+                    "2) pipx\n",
+                    minvalue=1,
+                    maxvalue=2
+                )
+                if method_choice == 1:
+                    # Attempt pip install
+                    try:
+                        subprocess.run(["pip", "install", "ofscraper"], check=True, text=True)
+                        self.update_status("ofscraper installed successfully via pip.")
+                        # Re-check
+                        self.check_ofscraper_installation()
+                        return
+                    except subprocess.CalledProcessError as e:
+                        self.update_status(f"Error installing ofscraper via pip:\n{e}")
+
+                elif method_choice == 2:
+                    # Attempt pipx install
+                    try:
+                        subprocess.run(["pipx", "install", "ofscraper"], check=True, text=True)
+                        self.update_status("ofscraper installed successfully via pipx.")
+                        # Re-check
+                        self.check_ofscraper_installation()
+                        return
+                    except subprocess.CalledProcessError as e:
+                        self.update_status(f"Error installing ofscraper via pipx:\n{e}")
+                else:
+                    self.update_status("No valid install method selected. Skipping ofscraper installation.")
+            else:
+                self.update_status("Skipping ofscraper installation.")
+
     def install_aiolimiter_via_pip(self):
         try:
             subprocess.run(
@@ -253,8 +296,14 @@ class SetupOfScraperApp:
 
     def offer_aiolimiter_installation(self):
         if self.install_type is None:
-            self.update_status("'ofscraper' not found. We can still install aiolimiter with pip, but it may not be used.")
-            choice = messagebox.askyesno("Install aiolimiter", "Do you still want to install aiolimiter via pip?")
+            self.update_status(
+                "'ofscraper' not found. We can still install aiolimiter with pip, "
+                "but it may not be used unless ofscraper is installed."
+            )
+            choice = messagebox.askyesno(
+                "Install aiolimiter",
+                "Do you still want to install aiolimiter via pip?"
+            )
             if choice:
                 self.install_aiolimiter_via_pip()
             return
