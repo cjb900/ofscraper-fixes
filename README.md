@@ -54,7 +54,7 @@ These scripts help with:
    ```
 5. Follow the instructions in the GUI, clicking each button in numerical order
 
-### Linux
+### Linux (only tested on Ubuntu and Debian distros)
 
 #### Command Line Interface (CLI)
 
