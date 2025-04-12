@@ -4,6 +4,16 @@ This repository contains utility scripts designed to help fix common issues with
 
 <img src="https://github.com/user-attachments/assets/2270602b-dc1d-4f08-af67-ca6263bec100" width="450" height="450">
 
+## Disclaimer
+
+**USE AT YOUR OWN RISK**. This was created with the help of ChatGPT I am not responsible for any issues, damages, or problems that this script may cause to your system, ofScraper installation, or OF account. These scripts modify files and configurations for ofscraper, which could potentially lead to unintended consequences. Always backup important data before running such utilities.
+
+This tool is provided "as is" without warranty of any kind, either expressed or implied. The user assumes the entire risk of quality, performance, and any potential issues that may arise from using these scripts.
+
+These scripts are not officially affiliated with [ofScraper](https://github.com/datawhores/OF-Scraper/) developers unless otherwise stated.
+
+If you have any suggestes edits or code fixes please open an issue or pull request
+
 ## Overview
 
 These scripts help with:
@@ -184,11 +194,3 @@ If you encounter issues with DRM-protected content, the script can provide infor
 4. **Module not found errors**: Ensure all dependencies are installed
 
 For additional help, you can join the Discord server: https://discord.gg/wN7uxEVHRK
-
-## Disclaimer
-
-**USE AT YOUR OWN RISK**. I am not responsible for any issues, damages, or problems that this script may cause to your system, ofScraper installation, or account. These scripts modify system files and configurations, which could potentially lead to unintended consequences. Always backup important data before running such utilities.
-
-This tool is provided "as is" without warranty of any kind, either expressed or implied. The user assumes the entire risk of quality, performance, and any potential issues that may arise from using these scripts.
-
-These scripts are not officially affiliated with ofScraper developers unless otherwise stated.
