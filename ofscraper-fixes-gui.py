@@ -27,15 +27,20 @@ class SetupOfScraperApp:
         self.root.title("Setup ofScraper")
         self.root.geometry("615x700")
 
-        # === Attempt to load an image (if available) ===
+        # === Download and load the logo image from the provided URL ===
         if PIL_AVAILABLE:
             try:
-                logo_image = Image.open("starryai_0tvo7.png")
+                import urllib.request
+                from io import BytesIO
+                logo_url = "https://raw.githubusercontent.com/cjb900/ofscraper-fixes/refs/heads/main/starryai_0tvo7.png"
+                response = urllib.request.urlopen(logo_url)
+                image_data = response.read()
+                logo_image = Image.open(BytesIO(image_data))
                 logo_image = logo_image.resize((60, 60), Image.Resampling.LANCZOS)
                 self.logo_img = ImageTk.PhotoImage(logo_image)
             except Exception as e:
                 self.logo_img = None
-                print(f"Could not load starryai_0tvo7.png: {e}")
+                print(f"Could not load logo from URL {logo_url}: {e}")
         else:
             self.logo_img = None
 
@@ -164,7 +169,7 @@ class SetupOfScraperApp:
         self.status_label.config(state=tk.NORMAL)
         self.status_label.insert(tk.END, message + "\n")
         self.status_label.config(state=tk.DISABLED)
-        self.status_label.see(tk.END)  # Scroll to the end
+        self.status_label.see(tk.END)
 
     def check_python_version(self):
         major, minor, micro = sys.version_info.major, sys.version_info.minor, sys.version_info.micro
@@ -179,7 +184,6 @@ class SetupOfScraperApp:
             else:
                 message += "\nYou're on Python 3.11.x (but not 3.11.6)."
                 message += "\nIf you run into Python-related issues, we recommend trying Python 3.11.6."
-
         self.update_status(message)
 
     def check_ofscraper_installation(self):
@@ -224,7 +228,6 @@ class SetupOfScraperApp:
         else:
             self.install_type = None
             self.update_status("'ofscraper' not detected via pip or pipx.")
-
             choice = messagebox.askyesno(
                 "Install ofscraper",
                 "ofscraper is not detected.\nWould you like to install it now?"
@@ -246,7 +249,6 @@ class SetupOfScraperApp:
                         return
                     except subprocess.CalledProcessError as e:
                         self.update_status(f"Error installing ofscraper via pip:\n{e}")
-
                 elif method_choice == 2:
                     try:
                         subprocess.run(["pipx", "install", "ofscraper"], check=True, text=True)
@@ -393,7 +395,6 @@ class SetupOfScraperApp:
 
     def find_pipx_ofscraper_sitepackage_paths(self):
         candidate_venv_paths = []
-
         try:
             result = subprocess.run(["pipx", "list", "--json"], capture_output=True, text=True, check=True)
             data = json.loads(result.stdout)
@@ -441,7 +442,7 @@ class SetupOfScraperApp:
                 "Please enter the full path to your pipx venv for ofscraper (or leave blank to skip):\n"
                 "Example location:\n" 
                 "Ubuntu: /home/cjb900/.local/share/pipx/venvs/ofscraper\n"
-                "Windows: C:\\Users\\cjb900\\AppData\\Local\\pipx\\venvs\\ofscraper\n"
+                "Windows: 'C:\\Users\\cjb900\\AppData\\Local\\pipx\\venvs\\ofscraper'.\n"
             )
             if user_path and os.path.isdir(user_path):
                 candidate_venv_paths.append(user_path)
@@ -451,15 +452,12 @@ class SetupOfScraperApp:
 
         found_paths = set()
         for venv_path in candidate_venv_paths:
-            # If the candidate path is already a site-packages directory, use it directly.
             if os.path.basename(os.path.normpath(venv_path)).lower() == "site-packages":
                 found_paths.add(venv_path)
                 self.update_status(f"Candidate path is already a site-packages directory: {venv_path}")
                 continue
 
             if os.name == "nt":
-                # On Windows, pipx venvs typically have the site-packages directory at
-                # {venv_path}\Lib\site-packages
                 site_pkgs = os.path.join(venv_path, "Lib", "site-packages")
                 if os.path.isdir(site_pkgs):
                     found_paths.add(site_pkgs)
@@ -467,7 +465,6 @@ class SetupOfScraperApp:
                 else:
                     self.update_status(f"No site-package paths found in {venv_path}")
             else:
-                # For Unix-like systems, try the pattern with python3.* subfolder.
                 lib_path_pattern = os.path.join(venv_path, "lib", "python3.*", "site-packages")
                 for path in glob.glob(lib_path_pattern):
                     if os.path.isdir(path):
@@ -656,6 +653,38 @@ class SetupOfScraperApp:
                 subprocess.Popen(['gnome-terminal', '--', 'bash', '-c', 'ofscraper; exec bash'])
         except Exception as e:
             self.update_status(f"An error occurred while opening the terminal:\n{e}")
+
+    def run(self):
+        while True:
+            print("\n=== ofScraper Setup CLI Menu ===")
+            print("1. Check Python Version")
+            print("2. Check ofScraper Installation")
+            print("3. Install aiolimiter")
+            print("4. Update aiohttp")
+            print("5. Modify sessionmanager.py")
+            print("6. Modify config.json")
+            print("7. Test Run ofScraper")
+            print("0. Exit")
+            choice = simpledialog.askinteger("Select an option", "Enter a number (0-7):", minvalue=0, maxvalue=7)
+            if choice is None or choice == 0:
+                self.update_status("Exiting...")
+                break
+            elif choice == 1:
+                self.check_python_version()
+            elif choice == 2:
+                self.check_ofscraper_installation()
+            elif choice == 3:
+                self.offer_aiolimiter_installation()
+            elif choice == 4:
+                self.offer_aiohttp_update()
+            elif choice == 5:
+                self.modify_sessionmanager_if_needed()
+            elif choice == 6:
+                self.modify_ofscraper_config_if_needed()
+            elif choice == 7:
+                self.test_ofscraper()
+            else:
+                self.update_status("Invalid option, please try again.")
 
 if __name__ == "__main__":
     root = tk.Tk()
