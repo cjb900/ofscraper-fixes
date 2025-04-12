@@ -25,7 +25,7 @@ class SetupOfScraperApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Setup ofScraper")
-        self.root.geometry("600x600")
+        self.root.geometry("615x700")
 
         # === Attempt to load an image (if available) ===
         if PIL_AVAILABLE:
@@ -200,13 +200,15 @@ class SetupOfScraperApp:
 
         try:
             pipx_list = subprocess.run(
-                ["pipx", "list"],
+                ["pipx", "list", "--json"],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True
             )
-            if "ofscraper" in pipx_list.stdout:
-                pipx_installed = True
+            if pipx_list.returncode == 0:
+                data = json.loads(pipx_list.stdout)
+                if "venvs" in data and "ofscraper" in data["venvs"]:
+                    pipx_installed = True
         except FileNotFoundError:
             pass
 
@@ -425,25 +427,6 @@ class SetupOfScraperApp:
                 self.update_status(f"Error parsing pipx list text output: {e}")
 
         if not candidate_venv_paths:
-            try:
-                show_result = subprocess.run(["pipx", "show", "ofscraper"], capture_output=True, text=True, check=True)
-                lines = show_result.stdout.splitlines()
-                for line in lines:
-                    if "Venv location:" in line:
-                        idx = line.find("Venv location:")
-                        if idx != -1:
-                            path_str = line[idx+14:].strip()
-                            if os.path.isdir(path_str):
-                                candidate_venv_paths.append(path_str)
-                                self.update_status(f"Found pipx venv path from show output: {path_str}")
-                            else:
-                                self.update_status(f"Invalid path found in show output: {path_str}")
-            except subprocess.CalledProcessError as e:
-                self.update_status(f"Error parsing pipx show output: {e.stderr}")
-            except Exception as e:
-                self.update_status(f"Error parsing pipx show output: {e}")
-
-        if not candidate_venv_paths:
             guess_default = os.path.expanduser("~/AppData/Local/pipx/venvs/ofscraper")
             if os.path.isdir(guess_default):
                 candidate_venv_paths.append(guess_default)
@@ -458,7 +441,7 @@ class SetupOfScraperApp:
                 "Please enter the full path to your pipx venv for ofscraper (or leave blank to skip):\n"
                 "Example location:\n" 
                 "Ubuntu: /home/cjb900/.local/share/pipx/venvs/ofscraper\n"
-                "Windows: 'C:\\Users\\cjb900\\AppData\\Local\\pipx\\venvs\\ofscraper'.\n"
+                "Windows: C:\\Users\\cjb900\\AppData\\Local\\pipx\\venvs\\ofscraper\n"
             )
             if user_path and os.path.isdir(user_path):
                 candidate_venv_paths.append(user_path)
@@ -468,13 +451,30 @@ class SetupOfScraperApp:
 
         found_paths = set()
         for venv_path in candidate_venv_paths:
-            lib_path = os.path.join(venv_path, "lib", "python3.*", "site-packages")
-            for path in glob.glob(lib_path):
-                if os.path.isdir(path):
-                    found_paths.add(path)
-                    self.update_status(f"Found site-package path: {path}")
-            if not found_paths:
-                self.update_status(f"No site-package paths found in {venv_path}")
+            # If the candidate path is already a site-packages directory, use it directly.
+            if os.path.basename(os.path.normpath(venv_path)).lower() == "site-packages":
+                found_paths.add(venv_path)
+                self.update_status(f"Candidate path is already a site-packages directory: {venv_path}")
+                continue
+
+            if os.name == "nt":
+                # On Windows, pipx venvs typically have the site-packages directory at
+                # {venv_path}\Lib\site-packages
+                site_pkgs = os.path.join(venv_path, "Lib", "site-packages")
+                if os.path.isdir(site_pkgs):
+                    found_paths.add(site_pkgs)
+                    self.update_status(f"Found site-package path: {site_pkgs}")
+                else:
+                    self.update_status(f"No site-package paths found in {venv_path}")
+            else:
+                # For Unix-like systems, try the pattern with python3.* subfolder.
+                lib_path_pattern = os.path.join(venv_path, "lib", "python3.*", "site-packages")
+                for path in glob.glob(lib_path_pattern):
+                    if os.path.isdir(path):
+                        found_paths.add(path)
+                        self.update_status(f"Found site-package path: {path}")
+                if not found_paths:
+                    self.update_status(f"No site-package paths found in {venv_path}")
 
         return found_paths
 
