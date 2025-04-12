@@ -339,14 +339,14 @@ class SetupOfScraperApp:
 
     def update_aiohttp_via_pip(self):
         try:
-            subprocess.run(["pip", "install", "--upgrade", "aiohttp==3.11.6"], check=True, text=True)
+            subprocess.run(["pip", "install", "--upgrade", "aiohttp==3.11.16"], check=True, text=True)
             self.update_status("aiohttp updated successfully via pip.")
         except subprocess.CalledProcessError as e:
             self.update_status(f"An error occurred while updating aiohttp via pip:\n{e}")
 
     def update_aiohttp_via_pipx(self):
         try:
-            subprocess.run(["pipx", "inject", "ofscraper", "aiohttp==3.11.6", "--force"], check=True, text=True)
+            subprocess.run(["pipx", "inject", "ofscraper", "aiohttp==3.11.16", "--force"], check=True, text=True)
             self.update_status("aiohttp injected successfully via pipx.")
         except subprocess.CalledProcessError as e:
             self.update_status(f"An error occurred while injecting aiohttp via pipx:\n{e}")
@@ -363,20 +363,20 @@ class SetupOfScraperApp:
                 self.update_aiohttp_via_pip()
 
         elif self.install_type == "pipx":
-            choice = messagebox.askyesno("Update aiohttp", "Update aiohttp with pipx (aiohttp==3.11.6)?")
+            choice = messagebox.askyesno("Update aiohttp", "Update aiohttp with pipx (aiohttp==3.11.16)?")
             if choice:
                 self.update_aiohttp_via_pipx()
 
         elif self.install_type == "both":
             options = [
                 "Update aiohttp with pip",
-                "Update aiohttp with pipx (aiohttp==3.11.6)",
+                "Update aiohttp with pipx (aiohttp==3.11.16)",
                 "Do both",
                 "Skip"
             ]
             choice = simpledialog.askinteger(
                 "Update aiohttp",
-                "Select an option:\n1) Update aiohttp with pip\n2) Update aiohttp with pipx (aiohttp==3.11.6)\n3) Do both\n4) Skip",
+                "Select an option:\n1) Update aiohttp with pip\n2) Update aiohttp with pipx (aiohttp==3.11.16)\n3) Do both\n4) Skip",
                 minvalue=1,
                 maxvalue=4
             )
@@ -452,6 +452,8 @@ class SetupOfScraperApp:
                 "Enter Path",
                 "Unable to automatically find the pipx environment for 'ofscraper'.\n"
                 "Please enter the full path to your pipx venv for ofscraper (or leave blank to skip):"
+                "Example location:" 
+                "Ubuntu: /home/cjb900/.local/share/pipx/venvs/ofscraper"
             )
             if user_path and os.path.isdir(user_path):
                 candidate_venv_paths.append(user_path)
