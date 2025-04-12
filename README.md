@@ -142,17 +142,9 @@ These scripts help with:
 
 The GUI script uses Tkinter, which should be included with most Python installations but may need to be installed separately on some Linux distributions:
 
-- Ubuntu/Debian:
+- Ubuntu/Debian: May work in other Linux distros but not tested
   ```
   sudo apt-get install python3-tk
-  ```
-- Fedora:
-  ```
-  sudo dnf install python3-tkinter
-  ```
-- Arch Linux:
-  ```
-  sudo pacman -S tk
   ```
 
 For better image support, it will attempt to use PIL/Pillow if available:
