@@ -451,9 +451,10 @@ class SetupOfScraperApp:
             user_path = simpledialog.askstring(
                 "Enter Path",
                 "Unable to automatically find the pipx environment for 'ofscraper'.\n"
-                "Please enter the full path to your pipx venv for ofscraper (or leave blank to skip):"
-                "Example location:" 
-                "Ubuntu: /home/cjb900/.local/share/pipx/venvs/ofscraper"
+                "Please enter the full path to your pipx venv for ofscraper (or leave blank to skip):\n"
+                "Example location:\n" 
+                "Ubuntu: /home/cjb900/.local/share/pipx/venvs/ofscraper\n"
+                "Windows: C:\Users\cjb900\AppData\Local\pipx\pipx\venvs\ofscraper\n"
             )
             if user_path and os.path.isdir(user_path):
                 candidate_venv_paths.append(user_path)
