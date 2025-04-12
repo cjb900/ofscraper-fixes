@@ -25,7 +25,7 @@ class SetupOfScraperApp:
         # === Attempt to load the PNG with Pillow ===
         try:
             logo_image = Image.open("starryai_0tvo7.png")
-            # If needed, you can resize:
+            # If needed, resize to 60×60, etc.
             logo_image = logo_image.resize((60, 60), Image.Resampling.LANCZOS)
             self.logo_img = ImageTk.PhotoImage(logo_image)
         except Exception as e:
@@ -167,14 +167,25 @@ class SetupOfScraperApp:
         self.status_label.config(state=tk.DISABLED)
         self.status_label.see(tk.END)  # Scroll to the end of the text
 
+    #
+    #  UPDATED check_python_version method
+    #
     def check_python_version(self):
         major, minor, micro = sys.version_info.major, sys.version_info.minor, sys.version_info.micro
         message = f"You are currently using Python {major}.{minor}.{micro}"
+
+        # If outside the recommended 3.11.x range, prompt for 3.11.6
         if (major < 3) or (major == 3 and minor < 11) or (major == 3 and minor >= 13):
             message += "\nYour Python version is not in the 3.11.x range."
             message += "\nWe recommend installing Python 3.11.6."
         else:
-            message += "\nYour Python version is within the recommended range."
+            # Now we know it's 3.11.x but not <3.11 or >=3.13
+            if micro == 6:
+                message += "\nYou are on Python 3.11.6, which is fully recommended!"
+            else:
+                message += "\nYou're on Python 3.11.x (but not 3.11.6)."
+                message += "\nIf you run into Python-related issues, we recommend trying Python 3.11.6."
+
         self.update_status(message)
 
     def check_ofscraper_installation(self):
@@ -463,9 +474,6 @@ class SetupOfScraperApp:
         patched = self.patch_sessionmanager_in_paths(all_paths)
         if not patched:
             self.update_status("sessionmanager.py was not modified or found.")
-
-        # If needed, you could re-check aiohttp updates here:
-        # self.offer_aiohttp_update()
 
     def check_key_mode_default(self, config_data):
         cdm_opts = config_data.get("cdm_options", {})
