@@ -5,6 +5,7 @@ import site
 import os
 import json
 import glob
+import shutil  # To check for existence of commands
 
 # Recommended dependencies and URLs.
 RECOMMENDED_AIOLIMITER = "aiolimiter==1.1.0 --force"
@@ -117,13 +118,16 @@ class SetupOfScraperCLI:
                     except subprocess.CalledProcessError as e:
                         self.update_status(f"Error installing ofscraper via pip:\n{e}")
                 elif method_choice == 2:
-                    try:
-                        subprocess.run(["pipx", "install", "ofscraper"], check=True, text=True)
-                        self.update_status("ofscraper installed successfully via pipx.")
-                        self.check_ofscraper_installation()
-                        return
-                    except subprocess.CalledProcessError as e:
-                        self.update_status(f"Error installing ofscraper via pipx:\n{e}")
+                    if shutil.which("pipx") is None:
+                        self.update_status("pipx not found in your system PATH. Please install pipx or choose pip instead.")
+                    else:
+                        try:
+                            subprocess.run(["pipx", "install", "ofscraper"], check=True, text=True)
+                            self.update_status("ofscraper installed successfully via pipx.")
+                            self.check_ofscraper_installation()
+                            return
+                        except subprocess.CalledProcessError as e:
+                            self.update_status(f"Error installing ofscraper via pipx:\n{e}")
             else:
                 self.update_status("Skipping ofscraper installation.")
 
@@ -139,6 +143,10 @@ class SetupOfScraperCLI:
             self.update_status(f"An error occurred while installing via pip:\n{e}")
 
     def install_aiolimiter_via_pipx(self):
+        if shutil.which("pipx") is None:
+            self.update_status("pipx not found in your system PATH. Cannot inject aiolimiter via pipx.")
+            return
+
         try:
             subprocess.run(
                 ["pipx", "inject", "ofscraper"] + RECOMMENDED_AIOLIMITER.split(),
@@ -186,6 +194,9 @@ class SetupOfScraperCLI:
             self.update_status(f"An error occurred while updating aiohttp via pip:\n{e}")
 
     def update_aiohttp_via_pipx(self):
+        if shutil.which("pipx") is None:
+            self.update_status("pipx not found in your system PATH. Cannot update aiohttp via pipx.")
+            return
         try:
             subprocess.run(["pipx", "inject", "ofscraper", "aiohttp==3.11.16", "--force"], check=True, text=True)
             self.update_status("aiohttp injected successfully via pipx.")
@@ -279,14 +290,12 @@ class SetupOfScraperCLI:
 
         found_paths = set()
         for venv_path in candidate_venv_paths:
-            # If the candidate path is already a site-packages directory, use it directly.
             if os.path.basename(os.path.normpath(venv_path)).lower() == "site-packages":
                 found_paths.add(venv_path)
                 self.update_status(f"Candidate path is already a site-packages directory: {venv_path}")
                 continue
 
             if os.name == "nt":
-                # On Windows, pipx venvs typically have the site-packages directory at {venv_path}\Lib\site-packages
                 site_pkgs = os.path.join(venv_path, "Lib", "site-packages")
                 if os.path.isdir(site_pkgs):
                     found_paths.add(site_pkgs)
@@ -318,11 +327,9 @@ class SetupOfScraperCLI:
                     try:
                         with open(session_file_path, 'r', encoding='utf-8') as f:
                             content = f.read()
-
                         if old_line not in content and new_line in content:
                             self.update_status("It appears 'sessionmanager.py' has already been changed (ssl=False).")
                             return True
-
                         if old_line in content:
                             new_content = content.replace(old_line, new_line)
                             with open(session_file_path, 'w', encoding='utf-8') as f:
@@ -333,7 +340,6 @@ class SetupOfScraperCLI:
                             self.update_status("The expected SSL line was not found in this sessionmanager.py.")
                     except Exception as e:
                         self.update_status(f"Error modifying {session_file_path}: {e}")
-
         return found_and_modified
 
     def modify_sessionmanager_if_needed(self):
@@ -363,7 +369,6 @@ class SetupOfScraperCLI:
     def check_key_mode_default(self, config_data):
         cdm_opts = config_data.get("cdm_options", {})
         key_mode_val = cdm_opts.get("key-mode-default")
-
         if key_mode_val == "manual":
             self.update_status("'key-mode-default' is already set to 'manual' in cdm_options. Nothing to change.")
         else:
@@ -381,7 +386,6 @@ class SetupOfScraperCLI:
         if not ask_yes_no("Would you like to check (and optionally fix) ofscraper's config.json?"):
             self.update_status("Skipping config.json modification.")
             return
-
         if not os.path.isfile(config_path):
             self.update_status(f"{config_path} not found.")
             if ask_yes_no("Would you like to create a new config.json with recommended advanced_options?"):
@@ -407,7 +411,6 @@ class SetupOfScraperCLI:
             else:
                 self.update_status("Skipping config creation.")
             return
-
         self.update_status(f"Found config file at {config_path}. Checking relevant advanced_options...")
         try:
             with open(config_path, "r", encoding="utf-8") as f:
@@ -415,9 +418,7 @@ class SetupOfScraperCLI:
         except Exception as e:
             self.update_status(f"Failed to read or parse JSON from {config_path}: {e}")
             return
-
         adv_opts = config_data.setdefault("advanced_options", {})
-
         current_dmd = adv_opts.get("dynamic-mode-default")
         if current_dmd == "generic":
             self.update_status("'advanced_options.dynamic-mode-default' is already set to 'generic'.")
@@ -426,7 +427,6 @@ class SetupOfScraperCLI:
             if ask_yes_no("Would you like to set it to 'generic'?"):
                 adv_opts["dynamic-mode-default"] = "generic"
                 self.update_status("Will set 'advanced_options.dynamic-mode-default' to 'generic'...")
-
         custom_vals = adv_opts.setdefault("custom_values", {})
         current_url = custom_vals.get("DYNAMIC_GENERIC_URL")
         if current_url == RECOMMENDED_DYNAMIC_GENERIC_URL:
@@ -436,7 +436,6 @@ class SetupOfScraperCLI:
             if ask_yes_no(f"Would you like to set DYNAMIC_GENERIC_URL to '{RECOMMENDED_DYNAMIC_GENERIC_URL}'?"):
                 custom_vals["DYNAMIC_GENERIC_URL"] = RECOMMENDED_DYNAMIC_GENERIC_URL
                 self.update_status("Will set 'advanced_options.custom_values.DYNAMIC_GENERIC_URL' to the recommended URL...")
-
         try:
             with open(config_path, "w", encoding='utf-8') as f:
                 json.dump(config_data, f, indent=2)
