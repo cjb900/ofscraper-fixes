@@ -23,6 +23,46 @@ These scripts help with:
 - Python 3.11.x (3.11.6 is specifically recommended)
 - ofScraper installed via pip or pipx
 
+## Dependencies
+
+### Required Dependencies
+- Python 3.11.x (3.11.6 recommended)
+- pip or pipx package managers
+- Standard Python libraries:
+  - sys
+  - subprocess
+  - site
+  - os
+  - json
+  - tkinter (for GUI version only)
+
+### Optional Dependencies
+- Pillow (PIL): For improved image handling in the GUI
+  ```
+  pip install pillow
+  ```
+
+### Dependencies that will be installed/updated by the script
+- aiolimiter==1.1.0
+- aiohttp==3.11.6
+
+### Environment Dependencies
+- For Windows: PowerShell (for testing ofScraper)
+- For Linux/Gnome: gnome-terminal (for testing ofScraper)
+
+## Installation
+
+1. Clone this repository or download the Python scripts
+   ```
+   git clone https://github.com/yourusername/ofscraper-fixes.git
+   ```
+   or download the .py files directly
+
+2. Ensure you have the required dependencies installed:
+   ```
+   pip install pillow # Optional, for GUI image support
+   ```
+
 ## Usage
 
 ### Windows
@@ -54,7 +94,7 @@ These scripts help with:
    ```
 5. Follow the instructions in the GUI, clicking each button in numerical order
 
-### Linux (only tested on Ubuntu and Debian distros)
+### Linux
 
 #### Command Line Interface (CLI)
 
@@ -98,10 +138,24 @@ These scripts help with:
    ```
 5. Follow the instructions in the GUI, clicking each button in numerical order
 
-## GUI Requirements
+### GUI Requirements
 
-The GUI script uses Tkinter, which should be included with most Python installations. For better image support, it will attempt to use PIL/Pillow if available. If you want to enable image support:
+The GUI script uses Tkinter, which should be included with most Python installations but may need to be installed separately on some Linux distributions:
 
+- Ubuntu/Debian:
+  ```
+  sudo apt-get install python3-tk
+  ```
+- Fedora:
+  ```
+  sudo dnf install python3-tkinter
+  ```
+- Arch Linux:
+  ```
+  sudo pacman -S tk
+  ```
+
+For better image support, it will attempt to use PIL/Pillow if available:
 ```
 pip install pillow
 ```
@@ -127,6 +181,13 @@ The script modifies the ofScraper configuration to:
 ## Troubleshooting
 
 If you encounter issues with DRM-protected content, the script can provide information about obtaining manual DRM keys.
+
+### Common Issues
+
+1. **Tkinter not found**: Install the tkinter package for your Python installation
+2. **Permission denied**: Use chmod to make the scripts executable or run with python/python3 explicitly
+3. **pipx not found**: Install pipx if you want to use it (`pip install pipx`)
+4. **Module not found errors**: Ensure all dependencies are installed
 
 For additional help, you can join the Discord server: https://discord.gg/wN7uxEVHRK
 
