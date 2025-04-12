@@ -44,6 +44,22 @@ def ask_string(prompt):
     return input(f"{prompt}: ").strip()
 
 
+BANNER = r"""
+                      ___   __                                          
+ _____ _____ _____   / _ \ / _|___  ___ _ __ __ _ _ __   ___ _ __       
+|_____|_____|_____| | | | | |_/ __|/ __| '__/ _` | '_ \ / _ \ '__|      
+|_____|_____|_____| | |_| |  _\__ \ (__| | | (_| | |_) |  __/ |         
+                     \___/|_| |___/\___|_|  \__,_| .__/ \___|_|         
+ ____       _                  ____ _     ___   _|_|__                  
+/ ___|  ___| |_ _   _ _ __    / ___| |   |_ _| |  \/  | ___ _ __  _   _ 
+\___ \ / _ \ __| | | | '_ \  | |   | |    | |  | |\/| |/ _ \ '_ \| | | |
+ ___) |  __/ |_| |_| | |_) | | |___| |___ | |  | |  | |  __/ | | | |_| |
+|____/ \___|\__|\__,_| .__/   \____|_____|___| |_|  |_|\___|_| |_|\__,_|
+|_____|_____|_____|  |_|                                                
+|_____|_____|_____|                                                  
+"""
+
+
 class SetupOfScraperCLI:
     def __init__(self):
         self.install_type = None
@@ -146,7 +162,6 @@ class SetupOfScraperCLI:
         if shutil.which("pipx") is None:
             self.update_status("pipx not found in your system PATH. Cannot inject aiolimiter via pipx.")
             return
-
         try:
             subprocess.run(
                 ["pipx", "inject", "ofscraper"] + RECOMMENDED_AIOLIMITER.split(),
@@ -310,6 +325,7 @@ class SetupOfScraperCLI:
                         self.update_status(f"Found site-package path: {path}")
                 if not found_paths:
                     self.update_status(f"No site-package paths found in {venv_path}")
+
         return found_paths
 
     def patch_sessionmanager_in_paths(self, paths):
@@ -411,6 +427,7 @@ class SetupOfScraperCLI:
             else:
                 self.update_status("Skipping config creation.")
             return
+
         self.update_status(f"Found config file at {config_path}. Checking relevant advanced_options...")
         try:
             with open(config_path, "r", encoding="utf-8") as f:
@@ -457,7 +474,8 @@ class SetupOfScraperCLI:
 
     def run(self):
         while True:
-            print("\n=== ofScraper Setup CLI Menu ===")
+            # Print the ASCII banner instead of a simple menu header.
+            print(BANNER)
             print("1. Check Python Version")
             print("2. Check ofScraper Installation")
             print("3. Install aiolimiter")
