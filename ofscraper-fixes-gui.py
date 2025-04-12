@@ -7,6 +7,7 @@ import os
 import json
 import tkinter as tk
 from tkinter import messagebox, simpledialog, ttk
+import glob
 
 # Use Pillow for robust image loading (supports more PNG formats)
 try:
@@ -27,11 +28,9 @@ class SetupOfScraperApp:
         self.root.geometry("600x600")
 
         # === Attempt to load an image (if available) ===
-        # Change filename or resizing if needed
         if PIL_AVAILABLE:
             try:
                 logo_image = Image.open("starryai_0tvo7.png")
-                # Example resize to 60×60
                 logo_image = logo_image.resize((60, 60), Image.Resampling.LANCZOS)
                 self.logo_img = ImageTk.PhotoImage(logo_image)
             except Exception as e:
@@ -46,7 +45,6 @@ class SetupOfScraperApp:
         main_frame = ttk.Frame(self.root, padding="10")
         main_frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
 
-        # === Display the logo if loaded, else fallback text ===
         if self.logo_img is not None:
             logo_label = ttk.Label(main_frame, image=self.logo_img)
             logo_label.grid(row=0, column=0, columnspan=3, pady=5)
@@ -54,7 +52,6 @@ class SetupOfScraperApp:
             fallback_label = ttk.Label(main_frame, text="ofScraper Setup", font=("TkDefaultFont", 14, "bold"))
             fallback_label.grid(row=0, column=0, columnspan=3, pady=5)
 
-        # Instructions
         instructions_label = ttk.Label(
             main_frame,
             text="Click each button in numeric order:",
@@ -62,7 +59,6 @@ class SetupOfScraperApp:
         )
         instructions_label.grid(row=1, column=0, columnspan=2, pady=5, sticky=(tk.W, tk.E))
 
-        # Buttons
         button_frame = ttk.Frame(main_frame)
         button_frame.grid(row=2, column=0, columnspan=2, pady=10, sticky=(tk.W, tk.E))
 
@@ -115,7 +111,6 @@ class SetupOfScraperApp:
         )
         test_ofscraper_button.grid(row=3, column=0, columnspan=2, pady=5, padx=5, sticky=(tk.W, tk.E))
 
-        # Log of what each button does
         log_label = ttk.Label(
             main_frame,
             text="Log of what each button does:",
@@ -127,7 +122,7 @@ class SetupOfScraperApp:
             "1. Check Python Version: Checks if the current Python version is within the recommended range (3.11.x).\n"
             "2. Check ofScraper Installation: Determines if ofscraper is installed via pip, pipx, or both.\n"
             "3. Install aiolimiter: Installs or injects aiolimiter==1.1.0 depending on how ofscraper is installed.\n"
-            "4. Update aiohttp: Updates aiohttp to version 3.11.6, either via pip or pipx.\n"
+            "4. Update aiohttp: Updates aiohttp to version 3.11.16, either via pip or pipx.\n"
             "5. Modify sessionmanager.py: Patches sessionmanager.py to replace ssl=create_default_context(cafile=certifi.where()) with ssl=False.\n"
             "6. Modify config.json: Checks and modifies the config.json file for ofscraper to ensure it has the recommended settings.\n"
             "7. Test Run ofScraper: Tests running ofScraper in a new PowerShell or Command Prompt window."
@@ -138,24 +133,20 @@ class SetupOfScraperApp:
         log_area.config(state=tk.DISABLED)
         log_area.grid(row=4, column=0, columnspan=2, pady=5, sticky=(tk.W, tk.E))
 
-        # Scrollbar for log_area
         log_scrollbar = ttk.Scrollbar(main_frame, orient=tk.VERTICAL, command=log_area.yview)
         log_scrollbar.grid(row=4, column=2, sticky=(tk.N, tk.S))
         log_area.config(yscrollcommand=log_scrollbar.set)
 
-        # Status Label
         self.status_label = tk.Text(main_frame, wrap=tk.WORD, height=10, width=70)
         self.status_label.config(state=tk.DISABLED)
         self.status_label.grid(row=5, column=0, columnspan=3, pady=5, sticky=(tk.W, tk.E))
 
-        # Scrollbar for status_label
         status_scrollbar = ttk.Scrollbar(main_frame, orient=tk.VERTICAL, command=self.status_label.yview)
         status_scrollbar.grid(row=5, column=3, sticky=(tk.N, tk.S))
         self.status_label.config(yscrollcommand=status_scrollbar.set)
 
         self.install_type = None
 
-        # Configure grid weights
         main_frame.columnconfigure(0, weight=1)
         main_frame.columnconfigure(1, weight=1)
         main_frame.columnconfigure(2, weight=0)
@@ -232,7 +223,6 @@ class SetupOfScraperApp:
             self.install_type = None
             self.update_status("'ofscraper' not detected via pip or pipx.")
 
-            # --- OFFER TO INSTALL if not found ---
             choice = messagebox.askyesno(
                 "Install ofscraper",
                 "ofscraper is not detected.\nWould you like to install it now?"
@@ -247,22 +237,18 @@ class SetupOfScraperApp:
                     maxvalue=2
                 )
                 if method_choice == 1:
-                    # Attempt pip install
                     try:
                         subprocess.run(["pip", "install", "ofscraper"], check=True, text=True)
                         self.update_status("ofscraper installed successfully via pip.")
-                        # Re-check
                         self.check_ofscraper_installation()
                         return
                     except subprocess.CalledProcessError as e:
                         self.update_status(f"Error installing ofscraper via pip:\n{e}")
 
                 elif method_choice == 2:
-                    # Attempt pipx install
                     try:
                         subprocess.run(["pipx", "install", "ofscraper"], check=True, text=True)
                         self.update_status("ofscraper installed successfully via pipx.")
-                        # Re-check
                         self.check_ofscraper_installation()
                         return
                     except subprocess.CalledProcessError as e:
@@ -410,43 +396,61 @@ class SetupOfScraperApp:
             result = subprocess.run(["pipx", "list", "--json"], capture_output=True, text=True, check=True)
             data = json.loads(result.stdout)
             if "venvs" in data and "ofscraper" in data["venvs"]:
-                venv_path = data["venvs"]["ofscraper"].get("path")
+                venv_path = data["venvs"]["ofscraper"].get("venv")
                 if venv_path and os.path.isdir(venv_path):
                     candidate_venv_paths.append(venv_path)
-        except Exception:
-            pass
+                    self.update_status(f"Found pipx venv path from JSON: {venv_path}")
+                else:
+                    self.update_status(f"No valid venv path found in JSON: {venv_path}")
+            else:
+                self.update_status("No ofscraper venv found in pipx list JSON.")
+        except Exception as e:
+            self.update_status(f"Error parsing pipx list JSON: {e}")
 
-        try:
-            txt_result = subprocess.run(["pipx", "list"], capture_output=True, text=True, check=True)
-            lines = txt_result.stdout.splitlines()
-            for line in lines:
-                if "ofscraper" in line and "Location:" in line:
-                    idx = line.find("Location:")
-                    if idx != -1:
-                        path_str = line[idx+9:].strip()
-                        if os.path.isdir(path_str):
-                            candidate_venv_paths.append(path_str)
-        except Exception:
-            pass
+        if not candidate_venv_paths:
+            try:
+                txt_result = subprocess.run(["pipx", "list"], capture_output=True, text=True, check=True)
+                lines = txt_result.stdout.splitlines()
+                for line in lines:
+                    if "ofscraper" in line and "Location:" in line:
+                        idx = line.find("Location:")
+                        if idx != -1:
+                            path_str = line[idx+9:].strip()
+                            if os.path.isdir(path_str):
+                                candidate_venv_paths.append(path_str)
+                                self.update_status(f"Found pipx venv path from text output: {path_str}")
+                            else:
+                                self.update_status(f"Invalid path found in text output: {path_str}")
+            except Exception as e:
+                self.update_status(f"Error parsing pipx list text output: {e}")
 
-        try:
-            show_result = subprocess.run(["pipx", "show", "ofscraper"], capture_output=True, text=True, check=True)
-            lines = show_result.stdout.splitlines()
-            for line in lines:
-                if "venv at" in line:
-                    idx = line.find("venv at ")
-                    if idx != -1:
-                        path_str = line[idx+8:].strip()
-                        if os.path.isdir(path_str):
-                            candidate_venv_paths.append(path_str)
-        except Exception:
-            pass
+        if not candidate_venv_paths:
+            try:
+                show_result = subprocess.run(["pipx", "show", "ofscraper"], capture_output=True, text=True, check=True)
+                lines = show_result.stdout.splitlines()
+                for line in lines:
+                    if "Venv location:" in line:
+                        idx = line.find("Venv location:")
+                        if idx != -1:
+                            path_str = line[idx+14:].strip()
+                            if os.path.isdir(path_str):
+                                candidate_venv_paths.append(path_str)
+                                self.update_status(f"Found pipx venv path from show output: {path_str}")
+                            else:
+                                self.update_status(f"Invalid path found in show output: {path_str}")
+            except subprocess.CalledProcessError as e:
+                self.update_status(f"Error parsing pipx show output: {e.stderr}")
+            except Exception as e:
+                self.update_status(f"Error parsing pipx show output: {e}")
 
-        guess_default = os.path.expanduser("~/.local/pipx/venvs/ofscraper")
-        if os.path.isdir(guess_default):
-            candidate_venv_paths.append(guess_default)
+        if not candidate_venv_paths:
+            guess_default = os.path.expanduser("~/AppData/Local/pipx/venvs/ofscraper")
+            if os.path.isdir(guess_default):
+                candidate_venv_paths.append(guess_default)
+                self.update_status(f"Using default pipx venv path: {guess_default}")
+            else:
+                self.update_status(f"Default pipx venv path not found: {guess_default}")
 
-        candidate_venv_paths = list(set(candidate_venv_paths))
         if not candidate_venv_paths:
             user_path = simpledialog.askstring(
                 "Enter Path",
@@ -454,16 +458,24 @@ class SetupOfScraperApp:
                 "Please enter the full path to your pipx venv for ofscraper (or leave blank to skip):\n"
                 "Example location:\n" 
                 "Ubuntu: /home/cjb900/.local/share/pipx/venvs/ofscraper\n"
-                "Windows: C:\Users\cjb900\AppData\Local\pipx\pipx\venvs\ofscraper\n"
+                "Windows: 'C:\\Users\\cjb900\\AppData\\Local\\pipx\\venvs\\ofscraper'.\n"
             )
             if user_path and os.path.isdir(user_path):
                 candidate_venv_paths.append(user_path)
+                self.update_status(f"Using user-provided pipx venv path: {user_path}")
+            else:
+                self.update_status(f"User-provided path not found: {user_path}")
 
         found_paths = set()
         for venv_path in candidate_venv_paths:
-            for root, dirs, files in os.walk(venv_path):
-                if "site-packages" in root:
-                    found_paths.add(root)
+            lib_path = os.path.join(venv_path, "lib", "python3.*", "site-packages")
+            for path in glob.glob(lib_path):
+                if os.path.isdir(path):
+                    found_paths.add(path)
+                    self.update_status(f"Found site-package path: {path}")
+            if not found_paths:
+                self.update_status(f"No site-package paths found in {venv_path}")
+
         return found_paths
 
     def patch_sessionmanager_in_paths(self, paths):
@@ -638,11 +650,9 @@ class SetupOfScraperApp:
         self.update_status("Opening a new terminal window to test ofScraper...")
         try:
             if os.name == 'nt':  # Windows
-                # Open PowerShell and run ofscraper
                 subprocess.Popen(['powershell', '-Command', 'Start-Process', 'powershell',
                                   '-ArgumentList', '"-NoExit", "ofscraper"'])
             else:
-                # On Linux (Gnome), open a new terminal
                 subprocess.Popen(['gnome-terminal', '--', 'bash', '-c', 'ofscraper; exec bash'])
         except Exception as e:
             self.update_status(f"An error occurred while opening the terminal:\n{e}")
