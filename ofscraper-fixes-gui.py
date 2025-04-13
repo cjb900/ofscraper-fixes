@@ -641,24 +641,29 @@ class SetupOfScraperApp:
         except Exception as e:
             self.update_status(f"Failed to update config.json: {e}")
         
-        # Additional auth instructions
-        auth_info = (
+        # Additional auth instructions in a dialog
+        auth_prompt = (
             "If your auth is still failing, clear your browser's cookies and cache.\n"
             "DO NOT USE the browser extension and get your auth information manually and enter it into the auth.json file directly.\n"
-            "If your auth is still failing, try accessing OF from another browser one you have not accessed OF from before."
+            "If your auth is still failing, try accessing OF from another browser one you have not accessed OF from before.\n\n"
+            "Would you like to open the auth.json file in your default text editor?"
         )
-        self.update_status(auth_info)
-        open_auth = messagebox.askyesno("Open auth.json", "Would you like to open the auth.json file in a text editor?")
+        open_auth = messagebox.askyesno("Open auth.json", auth_prompt)
         if open_auth:
-            # Use the specific path for auth.json as ~/.config/ofscraper/main_profile/auth.json
+            # Use the path for auth.json as ~/.config/ofscraper/main_profile/auth.json
             auth_path = os.path.expanduser("~/.config/ofscraper/main_profile/auth.json")
             if not os.path.isfile(auth_path):
+                # Create an empty auth.json if it doesn't exist
+                os.makedirs(os.path.dirname(auth_path), exist_ok=True)
                 with open(auth_path, "w", encoding="utf-8") as f:
                     f.write("{}")
                 self.update_status(f"Created new auth.json at {auth_path}.")
             try:
+                # Open the auth.json file using the default text editor
                 if os.name == "nt":
-                    subprocess.run(["notepad", auth_path])
+                    os.startfile(auth_path)
+                elif sys.platform == "darwin":
+                    subprocess.run(["open", auth_path])
                 else:
                     subprocess.run(["xdg-open", auth_path])
             except Exception as e:
