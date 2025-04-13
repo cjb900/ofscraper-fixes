@@ -641,7 +641,7 @@ class SetupOfScraperApp:
         except Exception as e:
             self.update_status(f"Failed to update config.json: {e}")
         
-        # Additional auth instructions in a dialog
+        # Additional auth instructions inside dialog prompt
         auth_prompt = (
             "If your auth is still failing, clear your browser's cookies and cache.\n"
             "DO NOT USE the browser extension and get your auth information manually and enter it into the auth.json file directly.\n"
@@ -650,20 +650,23 @@ class SetupOfScraperApp:
         )
         open_auth = messagebox.askyesno("Open auth.json", auth_prompt)
         if open_auth:
-            # Use the path for auth.json as ~/.config/ofscraper/main_profile/auth.json
+            # Use the specified path for auth.json:
+            # ~/.config/ofscraper/main_profile/auth.json
             auth_path = os.path.expanduser("~/.config/ofscraper/main_profile/auth.json")
             if not os.path.isfile(auth_path):
-                # Create an empty auth.json if it doesn't exist
                 os.makedirs(os.path.dirname(auth_path), exist_ok=True)
                 with open(auth_path, "w", encoding="utf-8") as f:
                     f.write("{}")
                 self.update_status(f"Created new auth.json at {auth_path}.")
             try:
-                # Open the auth.json file using the default text editor
                 if os.name == "nt":
                     os.startfile(auth_path)
                 elif sys.platform == "darwin":
                     subprocess.run(["open", auth_path])
+                elif sys.platform.startswith("linux"):
+                    # Use the $EDITOR environment variable if set, otherwise fallback to gedit
+                    editor = os.environ.get("EDITOR", "gedit")
+                    subprocess.run([editor, auth_path])
                 else:
                     subprocess.run(["xdg-open", auth_path])
             except Exception as e:
