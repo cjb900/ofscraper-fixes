@@ -13,6 +13,20 @@ RECOMMENDED_DYNAMIC_GENERIC_URL = "https://raw.githubusercontent.com/deviint/onl
 DRM_KEYS_INFO_URL = "https://forum.videohelp.com/threads/408031-Dumping-Your-own-L3-CDM-with-Android-Studio/page26#post2766668"
 DISCORD_INVITE_URL = "https://discord.gg/wN7uxEVHRK"
 
+BANNER = r"""
+                      ___   __                                          
+ _____ _____ _____   / _ \ / _|___  ___ _ __ __ _ _ __   ___ _ __       
+|_____|_____|_____| | | | | |_/ __|/ __| '__/ _` | '_ \ / _ \ '__|      
+|_____|_____|_____| | |_| |  _\__ \ (__| | | (_| | |_) |  __/ |         
+                     \___/|_| |___/\___|_|  \__,_| .__/ \___|_|         
+ ____       _                  ____ _     ___   _|_|__                  
+/ ___|  ___| |_ _   _ _ __    / ___| |   |_ _| |  \/  | ___ _ __  _   _ 
+\___ \ / _ \ __| | | | '_ \  | |   | |    | |  | |\/| |/ _ \ '_ \| | | |
+ ___) |  __/ |_| |_| | |_) | | |___| |___ | |  | |  | |  __/ | | | |_| |
+|____/ \___|\__|\__,_| .__/   \____|_____|___| |_|  |_|\___|_| |_|\__,_|
+|_____|_____|_____|  |_|                                                
+|_____|_____|_____|                                                  
+"""
 
 def ask_yes_no(prompt):
     """Prompt user with a yes/no question. Returns True for yes, False for no."""
@@ -44,25 +58,36 @@ def ask_string(prompt):
     return input(f"{prompt}: ").strip()
 
 
-BANNER = r"""
-                      ___   __                                          
- _____ _____ _____   / _ \ / _|___  ___ _ __ __ _ _ __   ___ _ __       
-|_____|_____|_____| | | | | |_/ __|/ __| '__/ _` | '_ \ / _ \ '__|      
-|_____|_____|_____| | |_| |  _\__ \ (__| | | (_| | |_) |  __/ |         
-                     \___/|_| |___/\___|_|  \__,_| .__/ \___|_|         
- ____       _                  ____ _     ___   _|_|__                  
-/ ___|  ___| |_ _   _ _ __    / ___| |   |_ _| |  \/  | ___ _ __  _   _ 
-\___ \ / _ \ __| | | | '_ \  | |   | |    | |  | |\/| |/ _ \ '_ \| | | |
- ___) |  __/ |_| |_| | |_) | | |___| |___ | |  | |  | |  __/ | | | |_| |
-|____/ \___|\__|\__,_| .__/   \____|_____|___| |_|  |_|\___|_| |_|\__,_|
-|_____|_____|_____|  |_|                                                
-|_____|_____|_____|                                                  
-"""
-
-
 class SetupOfScraperCLI:
     def __init__(self):
         self.install_type = None
+
+    def get_term_width(self):
+        try:
+            return os.get_terminal_size().columns
+        except OSError:
+            return 80
+
+    def print_centered(self, text):
+        print(text.center(self.get_term_width()))
+
+    def print_banner(self):
+        for line in BANNER.strip("\n").splitlines():
+            self.print_centered(line)
+
+    def print_menu(self):
+        options = [
+            "1. Check Python Version",
+            "2. Check ofScraper Installation",
+            "3. Install aiolimiter",
+            "4. Update aiohttp",
+            "5. Modify sessionmanager.py",
+            "6. Modify config.json",
+            "7. Test Run ofScraper",
+            "0. Exit"
+        ]
+        for option in options:
+            self.print_centered(option)
 
     def update_status(self, message):
         print(message)
@@ -325,7 +350,6 @@ class SetupOfScraperCLI:
                         self.update_status(f"Found site-package path: {path}")
                 if not found_paths:
                     self.update_status(f"No site-package paths found in {venv_path}")
-
         return found_paths
 
     def patch_sessionmanager_in_paths(self, paths):
@@ -362,21 +386,17 @@ class SetupOfScraperCLI:
         if self.install_type is None:
             self.update_status("'ofscraper' not found at all, skipping sessionmanager patch.")
             return
-
         if not ask_yes_no("Would you like to attempt to patch sessionmanager.py with 'ssl=False'?"):
             self.update_status("Skipping sessionmanager.py modification.")
             return
-
         all_paths = set()
         if self.install_type in ("pip", "both"):
             all_paths |= self.find_pip_sitepackage_paths()
         if self.install_type in ("pipx", "both"):
             all_paths |= self.find_pipx_ofscraper_sitepackage_paths()
-
         if not all_paths:
             self.update_status("No site-package paths found for your environment(s).")
             return
-
         self.update_status("Searching for sessionmanager.py in these paths to patch...")
         patched = self.patch_sessionmanager_in_paths(all_paths)
         if not patched:
@@ -427,7 +447,6 @@ class SetupOfScraperCLI:
             else:
                 self.update_status("Skipping config creation.")
             return
-
         self.update_status(f"Found config file at {config_path}. Checking relevant advanced_options...")
         try:
             with open(config_path, "r", encoding="utf-8") as f:
@@ -474,16 +493,12 @@ class SetupOfScraperCLI:
 
     def run(self):
         while True:
-            # Print the ASCII banner instead of a simple menu header.
-            print(BANNER)
-            print("1. Check Python Version")
-            print("2. Check ofScraper Installation")
-            print("3. Install aiolimiter")
-            print("4. Update aiohttp")
-            print("5. Modify sessionmanager.py")
-            print("6. Modify config.json")
-            print("7. Test Run ofScraper")
-            print("0. Exit")
+            # Print the ASCII banner centered on the terminal.
+            print("\n")
+            self.print_banner()
+            print("\n")
+            self.print_menu()
+            print("\n")
             choice = ask_integer("Select an option", 0, 7)
             if choice == 0:
                 self.update_status("Exiting...")
