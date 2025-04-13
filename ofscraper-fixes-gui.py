@@ -24,6 +24,38 @@ DRM_KEYS_INFO_URL = "https://forum.videohelp.com/threads/408031-Dumping-Your-own
 DISCORD_INVITE_URL = "https://discord.gg/wN7uxEVHRK"
 RECOMMENDED_OS_VERSION = "3.12.9"  # The target version for ofscraper
 
+def open_in_text_editor(filepath):
+    """
+    Attempt to open 'filepath' in a text editor.
+    On Windows, uses os.startfile.
+    On macOS, uses 'open'.
+    On Linux, tries $EDITOR, then a list of known editors, 
+    then falls back to 'xdg-open'.
+    """
+    if os.name == "nt":
+        # Windows
+        os.startfile(filepath)
+    elif sys.platform == "darwin":
+        # macOS
+        subprocess.run(["open", filepath])
+    else:
+        # Linux or other Unix
+        # 1. Check $EDITOR
+        editor_cmd = os.environ.get("EDITOR")
+        if not editor_cmd:
+            # 2. Try a small list of known editors
+            possible_editors = ["gedit", "mousepad", "kate", "xed", "nano", "vi"]
+            for pe in possible_editors:
+                if shutil.which(pe):
+                    editor_cmd = pe
+                    break
+        if editor_cmd:
+            subprocess.run([editor_cmd, filepath])
+        else:
+            # 3. Fallback to xdg-open
+            subprocess.run(["xdg-open", filepath])
+
+
 class SetupOfScraperApp:
     def __init__(self, root):
         self.root = root
@@ -37,8 +69,10 @@ class SetupOfScraperApp:
                 logo_url = "https://raw.githubusercontent.com/cjb900/ofscraper-fixes/refs/heads/main/starryai_0tvo7.png"
                 response = urllib.request.urlopen(logo_url)
                 image_data = response.read()
+                from PIL import Image
                 logo_image = Image.open(BytesIO(image_data))
                 logo_image = logo_image.resize((60, 60), Image.Resampling.LANCZOS)
+                from PIL import ImageTk
                 self.logo_img = ImageTk.PhotoImage(logo_image)
             except Exception as e:
                 self.logo_img = None
@@ -70,6 +104,7 @@ class SetupOfScraperApp:
         button_frame = ttk.Frame(main_frame)
         button_frame.grid(row=2, column=0, columnspan=2, pady=10, sticky=(tk.W, tk.E))
 
+        # 0. Combined System Check & Update
         combined_button = ttk.Button(
             button_frame,
             text="0. Combined System Check & Update ofscraper",
@@ -77,6 +112,7 @@ class SetupOfScraperApp:
         )
         combined_button.grid(row=0, column=0, columnspan=2, pady=5, padx=5, sticky=(tk.W, tk.E))
 
+        # 1. Check Python Version
         check_python_button = ttk.Button(
             button_frame,
             text="1. Check Python Version",
@@ -84,6 +120,7 @@ class SetupOfScraperApp:
         )
         check_python_button.grid(row=1, column=0, pady=5, padx=5, sticky=(tk.W, tk.E))
 
+        # 2. Check ofScraper Installation
         check_install_button = ttk.Button(
             button_frame,
             text="2. Check ofScraper Installation",
@@ -91,7 +128,7 @@ class SetupOfScraperApp:
         )
         check_install_button.grid(row=1, column=1, pady=5, padx=5, sticky=(tk.W, tk.E))
 
-        # Button 3: Finished Script Fix
+        # 3. Finished Script Fix
         install_aiolimiter_button = ttk.Button(
             button_frame,
             text="3. Finished Script Fix",
@@ -99,7 +136,7 @@ class SetupOfScraperApp:
         )
         install_aiolimiter_button.grid(row=2, column=0, pady=5, padx=5, sticky=(tk.W, tk.E))
 
-        # Button 4: Combined Update aiohttp & Fix sessionmanager.py
+        # 4. Combined Update aiohttp & Fix sessionmanager.py
         update_aiohttp_session_button = ttk.Button(
             button_frame,
             text="4. Update aiohttp & Fix sessionmanager.py",
@@ -107,7 +144,7 @@ class SetupOfScraperApp:
         )
         update_aiohttp_session_button.grid(row=2, column=1, pady=5, padx=5, sticky=(tk.W, tk.E))
 
-        # Button 5: Auth Config Fix
+        # 5. Auth Config Fix
         modify_config_button = ttk.Button(
             button_frame,
             text="5. Auth Config Fix",
@@ -115,7 +152,7 @@ class SetupOfScraperApp:
         )
         modify_config_button.grid(row=3, column=0, pady=5, padx=5, sticky=(tk.W, tk.E))
 
-        # Button 6: Test Run ofscraper
+        # 6. Test Run ofscraper
         test_ofscraper_button = ttk.Button(
             button_frame,
             text="6. Test Run ofscraper",
@@ -323,7 +360,6 @@ class SetupOfScraperApp:
                 new_version = self.get_ofscraper_version()
                 self.update_status(f"Updated ofscraper version: {new_version}")
 
-    # --- Updated Combined Method for Button 4 ---
     def update_aiohttp_and_fix_sessionmanager(self):
         explanation = (
             "This action will update aiohttp to version 3.11.16 and attempt to patch sessionmanager.py.\n"
@@ -390,7 +426,6 @@ class SetupOfScraperApp:
         else:
             self.update_status("Skipping sessionmanager.py fix.")
 
-    # --- Methods for installing aiolimiter ---
     def offer_aiolimiter_installation(self):
         fix_dialog = messagebox.askyesno(
             "Fix aiolimiter",
@@ -446,7 +481,6 @@ class SetupOfScraperApp:
         except subprocess.CalledProcessError as e:
             self.update_status(f"Error injecting aiolimiter via pipx:\n{e}")
 
-    # --- Method to modify sessionmanager.py ---
     def modify_sessionmanager_if_needed(self):
         if self.install_type is None:
             self.update_status("ofscraper not found; skipping sessionmanager.py patch.")
@@ -499,7 +533,6 @@ class SetupOfScraperApp:
                         self.update_status(f"Error modifying {session_file_path}: {e}")
         return False
 
-    # --- Method to find site-packages from a pip installation ---
     def find_pip_sitepackage_paths(self):
         paths = set(site.getsitepackages())
         user_site = site.getusersitepackages()
@@ -511,7 +544,6 @@ class SetupOfScraperApp:
                 paths.add(possible_prefix_lib)
         return paths
 
-    # --- New method to find site-packages from a pipx-installed ofscraper ---
     def find_pipx_ofscraper_sitepackage_paths(self):
         candidate_venv_paths = []
         try:
@@ -577,7 +609,6 @@ class SetupOfScraperApp:
                         self.update_status(f"Found site-package path: {path}")
         return found_paths
 
-    # --- Updated Auth Config Fix Method for Button 5 ---
     def modify_ofscraper_config_if_needed(self):
         config_path = os.path.expanduser("~/.config/ofscraper/config.json")
         if not messagebox.askyesno("Auth Config Fix", "Check and fix ofscraper's config.json?"):
@@ -641,7 +672,7 @@ class SetupOfScraperApp:
         except Exception as e:
             self.update_status(f"Failed to update config.json: {e}")
         
-        # Additional auth instructions inside dialog prompt
+        # Additional auth instructions inside a dialog prompt
         auth_prompt = (
             "If your auth is still failing, clear your browser's cookies and cache.\n"
             "DO NOT USE the browser extension and get your auth information manually and enter it into the auth.json file directly.\n"
@@ -650,8 +681,6 @@ class SetupOfScraperApp:
         )
         open_auth = messagebox.askyesno("Open auth.json", auth_prompt)
         if open_auth:
-            # Use the specified path for auth.json:
-            # ~/.config/ofscraper/main_profile/auth.json
             auth_path = os.path.expanduser("~/.config/ofscraper/main_profile/auth.json")
             if not os.path.isfile(auth_path):
                 os.makedirs(os.path.dirname(auth_path), exist_ok=True)
@@ -659,15 +688,28 @@ class SetupOfScraperApp:
                     f.write("{}")
                 self.update_status(f"Created new auth.json at {auth_path}.")
             try:
+                # Attempt to open 'auth.json' using the default text editor approach
                 if os.name == "nt":
-                    os.startfile(auth_path)
+                    os.startfile(auth_path)  # Windows
                 elif sys.platform == "darwin":
-                    subprocess.run(["open", auth_path])
+                    subprocess.run(["open", auth_path])  # macOS
                 elif sys.platform.startswith("linux"):
-                    # Use the $EDITOR environment variable if set, otherwise fallback to gedit
-                    editor = os.environ.get("EDITOR", "gedit")
-                    subprocess.run([editor, auth_path])
+                    # On Linux, try $EDITOR or known editors, then fallback to xdg-open
+                    editor_cmd = os.environ.get("EDITOR")
+                    if not editor_cmd:
+                        # Known editors fallback
+                        possible_editors = ["gedit", "mousepad", "kate", "xed", "nano", "vi"]
+                        for pe in possible_editors:
+                            if shutil.which(pe):
+                                editor_cmd = pe
+                                break
+                    if editor_cmd:
+                        subprocess.run([editor_cmd, auth_path])
+                    else:
+                        # If all else fails, use xdg-open
+                        subprocess.run(["xdg-open", auth_path])
                 else:
+                    # Fallback for other *nix
                     subprocess.run(["xdg-open", auth_path])
             except Exception as e:
                 self.update_status(f"Error opening auth.json in text editor: {e}")
