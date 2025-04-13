@@ -8,6 +8,7 @@ import tkinter as tk
 from tkinter import messagebox, simpledialog, ttk
 import glob
 import shutil
+import webbrowser  # For opening URLs
 
 # Use Pillow for robust image loading (supports more PNG formats)
 try:
@@ -17,7 +18,7 @@ except ImportError:
     PIL_AVAILABLE = False
 
 # Constants for recommended versions and URLs
-RECOMMENDED_AIOLIMITER = "aiolimiter==1.1.0"  # Version to fix the script ending with "Finished Script"
+RECOMMENDED_AIOLIMITER = "aiolimiter==1.1.0"  # Version to fix ofscraper ending with "Finish Script"
 RECOMMENDED_DYNAMIC_GENERIC_URL = "https://raw.githubusercontent.com/deviint/onlyfans-dynamic-rules/main/dynamicRules.json"
 DRM_KEYS_INFO_URL = "https://forum.videohelp.com/threads/408031-Dumping-Your-own-L3-CDM-with-Android-Studio/page26#post2766668"
 DISCORD_INVITE_URL = "https://discord.gg/wN7uxEVHRK"
@@ -52,7 +53,6 @@ class SetupOfScraperApp:
         main_frame = ttk.Frame(self.root, padding="10")
         main_frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
 
-        # Header: logo or fallback text
         if self.logo_img is not None:
             logo_label = ttk.Label(main_frame, image=self.logo_img)
             logo_label.grid(row=0, column=0, columnspan=2, pady=5)
@@ -60,7 +60,6 @@ class SetupOfScraperApp:
             fallback_label = ttk.Label(main_frame, text="ofScraper Setup", font=("TkDefaultFont", 14, "bold"))
             fallback_label.grid(row=0, column=0, columnspan=2, pady=5)
 
-        # Instructions
         instructions_label = ttk.Label(
             main_frame,
             text="Click the buttons below to perform setup tasks:",
@@ -68,11 +67,9 @@ class SetupOfScraperApp:
         )
         instructions_label.grid(row=1, column=0, columnspan=2, pady=5, sticky=(tk.W, tk.E))
 
-        # Buttons Frame
         button_frame = ttk.Frame(main_frame)
         button_frame.grid(row=2, column=0, columnspan=2, pady=10, sticky=(tk.W, tk.E))
 
-        # Button 0: Combined System Check & Update ofscraper
         combined_button = ttk.Button(
             button_frame,
             text="0. Combined System Check & Update ofscraper",
@@ -80,7 +77,6 @@ class SetupOfScraperApp:
         )
         combined_button.grid(row=0, column=0, columnspan=2, pady=5, padx=5, sticky=(tk.W, tk.E))
 
-        # Button 1: Check Python Version
         check_python_button = ttk.Button(
             button_frame,
             text="1. Check Python Version",
@@ -88,7 +84,6 @@ class SetupOfScraperApp:
         )
         check_python_button.grid(row=1, column=0, pady=5, padx=5, sticky=(tk.W, tk.E))
 
-        # Button 2: Check ofScraper Installation
         check_install_button = ttk.Button(
             button_frame,
             text="2. Check ofScraper Installation",
@@ -96,10 +91,10 @@ class SetupOfScraperApp:
         )
         check_install_button.grid(row=1, column=1, pady=5, padx=5, sticky=(tk.W, tk.E))
 
-        # Button 3: Install aiolimiter
+        # Button 3: Finished Script Fix
         install_aiolimiter_button = ttk.Button(
             button_frame,
-            text="3. Install aiolimiter",
+            text="3. Finished Script Fix",
             command=self.offer_aiolimiter_installation
         )
         install_aiolimiter_button.grid(row=2, column=0, pady=5, padx=5, sticky=(tk.W, tk.E))
@@ -112,10 +107,10 @@ class SetupOfScraperApp:
         )
         update_aiohttp_session_button.grid(row=2, column=1, pady=5, padx=5, sticky=(tk.W, tk.E))
 
-        # Button 5: Modify config.json
+        # Button 5: Auth Config Fix
         modify_config_button = ttk.Button(
             button_frame,
-            text="5. Modify config.json",
+            text="5. Auth Config Fix",
             command=self.modify_ofscraper_config_if_needed
         )
         modify_config_button.grid(row=3, column=0, pady=5, padx=5, sticky=(tk.W, tk.E))
@@ -128,7 +123,6 @@ class SetupOfScraperApp:
         )
         test_ofscraper_button.grid(row=3, column=1, pady=5, padx=5, sticky=(tk.W, tk.E))
 
-        # Log Area
         log_label = ttk.Label(
             main_frame,
             text="Log of actions:",
@@ -331,13 +325,11 @@ class SetupOfScraperApp:
 
     # --- Updated Combined Method for Button 4 ---
     def update_aiohttp_and_fix_sessionmanager(self):
-        # First, show an explanation dialog.
         explanation = (
-            "This action will update aiohttp to version 3.11.16 and attempt to patch sessionmanager.py. "
+            "This action will update aiohttp to version 3.11.16 and attempt to patch sessionmanager.py.\n"
             "These fixes help address the 'no models found' error."
         )
         messagebox.showinfo("Explanation", explanation)
-        # Ask if the user wants to update aiohttp.
         update_aiohttp = messagebox.askyesno("Update aiohttp", "Do you want to update aiohttp to version 3.11.16?")
         if update_aiohttp:
             if self.install_type is None:
@@ -389,7 +381,6 @@ class SetupOfScraperApp:
         else:
             self.update_status("Skipping update of aiohttp.")
 
-        # Regardless of the aiohttp update result, ask about sessionmanager.py patching.
         fix_sm = messagebox.askyesno(
             "Fix sessionmanager.py",
             "Do you want to attempt to patch sessionmanager.py to replace the SSL configuration? (This should fix model detection issues.)"
@@ -403,7 +394,7 @@ class SetupOfScraperApp:
     def offer_aiolimiter_installation(self):
         fix_dialog = messagebox.askyesno(
             "Fix aiolimiter",
-            "This will set the version of aiolimiter to 1.1.0 to fix the script ending with 'Finished Script'.\nDo you want to fix aiolimiter?"
+            "This will set the version of aiolimiter to 1.1.0 to fix ofscraper ending with 'Finish Script'.\nDo you want to fix aiolimiter?"
         )
         if not fix_dialog:
             self.update_status("Skipping aiolimiter fix.")
@@ -555,10 +546,13 @@ class SetupOfScraperApp:
             else:
                 self.update_status(f"Default pipx venv not found: {guess_default}")
         if not candidate_venv_paths:
-            # Updated prompt with example paths.
-            prompt = ("Unable to automatically find the pipx environment for 'ofscraper'.\n"
-                      "Please enter its full path (e.g., on Ubuntu: /home/cjb900/.local/share/pipx/venvs/ofscraper, "
-                      "on Windows: C:\\Users\\cjb900\\AppData\\Local\\pipx\\pipx\\venvs\\ofscraper) or leave blank to skip:")
+            prompt = (
+                "Unable to automatically find the pipx environment for 'ofscraper'.\n"
+                "Please enter its full path (for example:\n"
+                "  Ubuntu: /home/cjb900/.local/share/pipx/venvs/ofscraper\n"
+                "  Windows: C:\\Users\\cjb900\\AppData\\Local\\pipx\\pipx\\venvs\\ofscraper\n"
+                "or leave blank to skip):"
+            )
             user_path = simpledialog.askstring("Enter Path", prompt)
             if user_path:
                 user_path = os.path.normpath(user_path)
@@ -583,10 +577,10 @@ class SetupOfScraperApp:
                         self.update_status(f"Found site-package path: {path}")
         return found_paths
 
-    # --- Method to modify config.json ---
+    # --- Updated Auth Config Fix Method for Button 5 ---
     def modify_ofscraper_config_if_needed(self):
         config_path = os.path.expanduser("~/.config/ofscraper/config.json")
-        if not messagebox.askyesno("Modify config.json", "Check and fix ofscraper's config.json?"):
+        if not messagebox.askyesno("Auth Config Fix", "Check and fix ofscraper's config.json?"):
             self.update_status("Skipping config.json modification.")
             return
         if not os.path.isfile(config_path):
@@ -646,6 +640,29 @@ class SetupOfScraperApp:
             self.check_key_mode_default(config_data)
         except Exception as e:
             self.update_status(f"Failed to update config.json: {e}")
+        
+        # Additional auth instructions
+        auth_info = (
+            "If your auth is still failing, clear your browser's cookies and cache.\n"
+            "DO NOT USE the browser extension and get your auth information manually and enter it into the auth.json file directly.\n"
+            "If your auth is still failing, try accessing OF from another browser one you have not accessed OF from before."
+        )
+        self.update_status(auth_info)
+        open_auth = messagebox.askyesno("Open auth.json", "Would you like to open the auth.json file in a text editor?")
+        if open_auth:
+            # Use the specific path for auth.json as ~/.config/ofscraper/main_profile/auth.json
+            auth_path = os.path.expanduser("~/.config/ofscraper/main_profile/auth.json")
+            if not os.path.isfile(auth_path):
+                with open(auth_path, "w", encoding="utf-8") as f:
+                    f.write("{}")
+                self.update_status(f"Created new auth.json at {auth_path}.")
+            try:
+                if os.name == "nt":
+                    subprocess.run(["notepad", auth_path])
+                else:
+                    subprocess.run(["xdg-open", auth_path])
+            except Exception as e:
+                self.update_status(f"Error opening auth.json in text editor: {e}")
 
     def check_key_mode_default(self, config_data):
         cdm_opts = config_data.get("cdm_options", {})
@@ -657,12 +674,10 @@ class SetupOfScraperApp:
             self.update_status("Manual DRM keys are required to get DRM-protected videos.")
             choice = messagebox.askyesno("Obtain Manual DRM Keys", "Would you like info on obtaining manual DRM keys?")
             if choice:
-                self.update_status(f"Forum post for manual DRM keys:\n{DRM_KEYS_INFO_URL}")
-                self.update_status(f"For more help, join our Discord: {DISCORD_INVITE_URL}")
+                webbrowser.open(DRM_KEYS_INFO_URL)
+                self.update_status(f"Opened DRM keys info in the default web browser: {DRM_KEYS_INFO_URL}")
             else:
-                self.update_status("Exiting as requested.")
-                self.update_status(f"For more help, join our Discord: {DISCORD_INVITE_URL}")
-                sys.exit(0)
+                self.update_status("Manual DRM keys info not requested. Continuing without opening URL.")
 
     def test_ofscraper(self):
         self.update_status("Opening terminal to test ofscraper...")
