@@ -2,7 +2,8 @@
 
 This repository contains utility scripts designed to help fix common issues with ofScraper installations and configurations. The tools provide both command-line (CLI) and graphical (GUI) interfaces to streamline the setup process.
 
-<img src="https://github.com/user-attachments/assets/2270602b-dc1d-4f08-af67-ca6263bec100" width="450" height="450"> <img src="https://github.com/user-attachments/assets/db986dba-df68-4fb0-a3bf-fdaca6a96578" width="500" height="200">
+<img src="https://github.com/user-attachments/assets/a926a573-3662-4503-b962-50b6553ff8f2" width="450" height="450"> <img src="https://github.com/user-attachments/assets/db986dba-df68-4fb0-a3bf-fdaca6a96578" width="500" height="200">
+
 
 ## Disclaimer
 
