@@ -22,10 +22,11 @@ except ImportError:
 RECOMMENDED_AIOLIMITER = "aiolimiter==1.1.0"  # Version to fix ofscraper ending with "Finish Script"
 RECOMMENDED_DYNAMIC_GENERIC_URL = "https://raw.githubusercontent.com/deviint/onlyfans-dynamic-rules/main/dynamicRules.json"
 DRM_KEYS_INFO_URL = "https://forum.videohelp.com/threads/408031-Dumping-Your-own-L3-CDM-with-Android-Studio/page26#post2766668"
-WRITTEN_GUIDE_URL = "https://example.com/drm_keys_guide"  # Replace with your written guide URL
+WRITTEN_GUIDE_URL = "https://forum.videohelp.com/threads/408031-Dumping-Your-own-L3-CDM-with-Android-Studio/page26#post2766668"  # Replace with your written guide URL
 YOUTUBE_VIDEO_URL = "https://www.youtube.com/watch?v=MeQDCoYLTE0"  # Windows only
 DISCORD_INVITE_URL = "https://discord.gg/wN7uxEVHRK"
 RECOMMENDED_OS_VERSION = "3.12.9"  # Recommended version for ofscraper
+RECOMMENDED_PYTHON_VERSION = "3.11.6"  # Recommended Python version
 
 def open_in_text_editor(filepath):
     """
@@ -92,7 +93,7 @@ class SetupOfScraperApp:
         # Buttons – Removed former buttons “Check Python Version” and “Check ofScraper Installation”
         button_frame = ttk.Frame(self.main_frame)
         button_frame.grid(row=2, column=0, columnspan=2, pady=10, sticky=(tk.W, tk.E))
-        # Updated Button 0: "Start Here" calls combined_system_check
+        # "Start Here" button
         start_here_button = ttk.Button(button_frame,
                                        text="Start Here",
                                        command=self.combined_system_check)
@@ -102,16 +103,16 @@ class SetupOfScraperApp:
                                             command=self.offer_aiolimiter_installation)
         finished_script_button.grid(row=1, column=0, pady=5, padx=5, sticky=(tk.W, tk.E))
         update_aiohttp_button = ttk.Button(button_frame,
-                                           text="Update aiohttp & Fix sessionmanager.py",
+                                           text="No Models Found Fix",
                                            command=self.update_aiohttp_and_fix_sessionmanager)
         update_aiohttp_button.grid(row=1, column=1, pady=5, padx=5, sticky=(tk.W, tk.E))
         auth_config_button = ttk.Button(button_frame,
-                                        text="Auth Config Fix",
+                                        text="Auth/Config Fix & DRM Info",
                                         command=self.modify_ofscraper_config_if_needed)
         auth_config_button.grid(row=2, column=0, pady=5, padx=5, sticky=(tk.W, tk.E))
         test_run_button = ttk.Button(button_frame,
                                      text="Test Run ofscraper",
-                                     command=self.test_ofscraper)
+                                     command=self.open_ofscraper_in_new_terminal)
         test_run_button.grid(row=2, column=1, pady=5, padx=5, sticky=(tk.W, tk.E))
         # Log area
         log_label = ttk.Label(self.main_frame,
@@ -135,6 +136,18 @@ class SetupOfScraperApp:
         self.log_area.see(tk.END)
 
     def combined_system_check(self):
+        # Report current Python version.
+        ver = sys.version_info
+        current_py = f"{ver.major}.{ver.minor}.{ver.micro}"
+        self.update_status(f"You are currently using Python {current_py}")
+        # Check if in the 3.11.x range
+        if ver.major != 3 or ver.minor < 11 or ver.minor >= 13:
+            messagebox.showwarning("Python Version Warning",
+                f"You are currently using Python {current_py}.\nFor best compatibility, please install Python {RECOMMENDED_PYTHON_VERSION}.")
+            return
+        # Even if in 3.11.x, recommend 3.11.6 if not exactly that.
+        if current_py != RECOMMENDED_PYTHON_VERSION:
+            self.update_status("Note: The recommended Python version is 3.11.6. If you experience Python issues, please install Python 3.11.6.")
         self.update_status("=== Combined System Check & Update ===")
         self.check_ofscraper_installation()
         version = self.get_ofscraper_version()
@@ -505,14 +518,14 @@ class SetupOfScraperApp:
                 guess_default = os.path.expanduser("~/.local/share/pipx/venvs/ofscraper")
             if os.path.isdir(guess_default):
                 candidate_paths.append(guess_default)
-                self.update_status(f"Using default pipx venv path: {guess_default}")
+                self.update_status(f"Using default pipx venv path:\nWindows: C:\\Users\\cjb900\\AppData\\Local\\pipx\\pipx\\venvs\\ofscraper\nUbuntu: /home/cjb900/.local/share/pipx/venvs/ofscraper")
             else:
                 self.update_status(f"Default pipx venv not found: {guess_default}")
         if not candidate_paths:
             prompt = (
                 "Unable to automatically find the pipx environment for 'ofscraper'.\n"
                 "Please enter its full path (for example:\n"
-                "Windows: C:\\Users\\cjb90\\AppData\\Local\\pipx\\pipx\\venvs\\ofscraper\n"
+                "Windows: C:\\Users\\cjb900\\AppData\\Local\\pipx\\pipx\\venvs\\ofscraper\n"
                 "Ubuntu: /home/cjb900/.local/share/pipx/venvs/ofscraper\n"
                 "or leave blank to skip):"
             )
@@ -576,66 +589,9 @@ class SetupOfScraperApp:
                 text_widget.insert(tk.END, f"\nError running ofscraper: {e}")
         threading.Thread(target=run_command, daemon=True).start()
 
-    def embed_terminal(self):
-        """Embed an interactive terminal below the log area."""
-        if self.embedded_terminal_frame is not None:
-            self.term_entry.focus_set()
-            return
-        self.embedded_terminal_frame = ttk.Frame(self.main_frame, padding="5")
-        self.embedded_terminal_frame.grid(row=6, column=0, columnspan=3, sticky=(tk.W, tk.E))
-        label = ttk.Label(self.embedded_terminal_frame, text="Embedded Terminal (Interactive):", font=("TkDefaultFont", 10, "bold"))
-        label.grid(row=0, column=0, columnspan=2, sticky=(tk.W))
-        self.term_text = tk.Text(self.embedded_terminal_frame, wrap=tk.WORD, height=10)
-        self.term_text.grid(row=1, column=0, columnspan=2, sticky=(tk.W, tk.E))
-        term_scrollbar = ttk.Scrollbar(self.embedded_terminal_frame, orient=tk.VERTICAL, command=self.term_text.yview)
-        term_scrollbar.grid(row=1, column=2, sticky=(tk.N, tk.S))
-        self.term_text.config(yscrollcommand=term_scrollbar.set)
-        self.term_entry = ttk.Entry(self.embedded_terminal_frame)
-        self.term_entry.grid(row=2, column=0, columnspan=3, sticky=(tk.W, tk.E))
-        self.term_entry.bind("<Return>", self.send_command_to_process)
-        try:
-            self.embedded_proc = subprocess.Popen(["ofscraper"],
-                                                   stdin=subprocess.PIPE,
-                                                   stdout=subprocess.PIPE,
-                                                   stderr=subprocess.STDOUT,
-                                                   text=True,
-                                                   bufsize=1)
-        except Exception as e:
-            self.update_status(f"Error starting embedded terminal: {e}")
-            return
-        threading.Thread(target=self.read_from_process, daemon=True).start()
-        self.update_status("Embedded terminal started.")
-
-    def send_command_to_process(self, event):
-        command = self.term_entry.get() + "\n"
-        self.term_entry.delete(0, tk.END)
-        if self.embedded_proc and self.embedded_proc.stdin:
-            try:
-                self.embedded_proc.stdin.write(command)
-                self.embedded_proc.stdin.flush()
-            except Exception as e:
-                self.update_status(f"Error sending command: {e}")
-
-    def read_from_process(self):
-        while True:
-            line = self.embedded_proc.stdout.readline()
-            if not line:
-                break
-            self.root.after(0, lambda l=line: self.term_text.insert(tk.END, l))
-            self.root.after(0, lambda: self.term_text.see(tk.END))
-
     def test_ofscraper(self):
-        option = simpledialog.askinteger("Test Run ofscraper",
-                                           "Enter:\n1 - Open in new terminal (interactive)\n2 - Run in GUI window (output only)\n3 - Embed interactive terminal below the log",
-                                           minvalue=1, maxvalue=3)
-        if option == 1:
-            self.open_ofscraper_in_new_terminal()
-        elif option == 2:
-            self.run_ofscraper_in_gui()
-        elif option == 3:
-            self.embed_terminal()
-        else:
-            self.update_status("Invalid option for running ofscraper.")
+        # Instead of testing in a GUI or embedded terminal, open ofscraper in a new terminal window.
+        self.open_ofscraper_in_new_terminal()
 
 if __name__ == "__main__":
     root = tk.Tk()
