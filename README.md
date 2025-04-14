@@ -7,7 +7,7 @@ This repository contains utility scripts designed to help fix common issues with
 
 ## Disclaimer
 
-**USE AT YOUR OWN RISK**. This tool was created with the help of ChatGPT. I am not responsible for any issues, damages, or problems that this script may cause to your system, ofScraper installation, or OF account. These scripts modify files and configurations for ofscraper, which could potentially lead to unintended consequences. Always backup important data before running such utilities.
+**USE AT YOUR OWN RISK**. This tool was created with the help of ChatGPT. I am not responsible for any issues, damages, or problems that this script may cause to your system, ofScraper installation, or OF account. These scripts modify files and configurations for ofscraper, and while highly unlikely could potentially lead to unintended consequences. Always backup important data before running such utilities.
 
 This tool is provided "as is" without warranty of any kind, either expressed or implied. The user assumes the entire risk of quality, performance, and any potential issues that may arise from using these scripts.
 
