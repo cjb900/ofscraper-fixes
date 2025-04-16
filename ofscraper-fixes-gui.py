@@ -42,7 +42,7 @@ def open_in_text_editor(filepath):
     Open the file in a text editor.
     - Windows: uses os.startfile.
     - macOS: uses "open".
-    - Linux: checks $EDITOR or common editors, then falls back to xdg-open.
+    - Linux: tries $EDITOR or common editors, then falls back to xdg-open.
     """
     if os.name == "nt":
         os.startfile(filepath)
@@ -64,14 +64,14 @@ class SetupOfScraperApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Setup ofScraper")
-        self.root.geometry("625x700")
+        self.root.geometry("645x675")  # Increased height for additional button.
         self.main_frame = ttk.Frame(self.root, padding="10")
         self.main_frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
         # Display the ASCII logo.
         logo_label = tk.Label(self.main_frame, text=ASCII_LOGO, font=("Courier", 10), justify=tk.LEFT)
         logo_label.grid(row=0, column=0, columnspan=2, pady=(5, 10))
         self.install_type = None
-        self.embedded_proc = None  # (Not used in this script)
+        self.embedded_proc = None  # (Not used here)
         self.embedded_terminal_frame = None
         self.create_widgets()
 
@@ -82,26 +82,35 @@ class SetupOfScraperApp:
         instructions_label.grid(row=1, column=0, columnspan=2, pady=5, sticky=(tk.W, tk.E))
         button_frame = ttk.Frame(self.main_frame)
         button_frame.grid(row=2, column=0, columnspan=2, pady=10, sticky=(tk.W, tk.E))
+        # Row 0 in button_frame
         start_here_button = ttk.Button(button_frame,
                                        text="Start Here",
                                        command=self.combined_system_check)
         start_here_button.grid(row=0, column=0, columnspan=2, pady=5, padx=5, sticky=(tk.W, tk.E))
+        # Row 1 in button_frame
         finished_script_button = ttk.Button(button_frame,
                                             text="Finished Script Fix",
                                             command=self.offer_aiolimiter_installation)
         finished_script_button.grid(row=1, column=0, pady=5, padx=5, sticky=(tk.W, tk.E))
         update_aiohttp_button = ttk.Button(button_frame,
-                                           text="Update aiohttp & Fix sessionmanager.py",
+                                           text="No Model Found Fix",
                                            command=self.update_aiohttp_and_fix_sessionmanager)
         update_aiohttp_button.grid(row=1, column=1, pady=5, padx=5, sticky=(tk.W, tk.E))
+        # Row 2 in button_frame
         auth_config_button = ttk.Button(button_frame,
-                                        text="Auth Config Fix",
+                                        text="Auth/Config Fix & DRM Info",
                                         command=self.modify_ofscraper_config_if_needed)
         auth_config_button.grid(row=2, column=0, pady=5, padx=5, sticky=(tk.W, tk.E))
         test_run_button = ttk.Button(button_frame,
                                      text="Test Run ofscraper",
                                      command=self.open_ofscraper_in_new_terminal)
         test_run_button.grid(row=2, column=1, pady=5, padx=5, sticky=(tk.W, tk.E))
+        # Row 3 in button_frame: New "Reinstall ofscraper" button.
+        reinstall_button = ttk.Button(button_frame,
+                                      text="Reinstall ofscraper",
+                                      command=self.reinstall_ofscraper)
+        reinstall_button.grid(row=3, column=0, columnspan=2, pady=5, padx=5, sticky=(tk.W, tk.E))
+        # Log area: Shifted down to row 3.
         log_label = ttk.Label(self.main_frame,
                               text="Log of actions:",
                               font=("TkDefaultFont", 10, "bold"))
@@ -123,13 +132,11 @@ class SetupOfScraperApp:
         self.log_area.see(tk.END)
 
     def combined_system_check(self):
-        # Report which Python is running the script.
+        # Debug: report which Python is running the script.
         self.update_status(f"Script is running with: {sys.executable}")
-        # Report current Python version.
         ver = sys.version_info
         current_py = f"{ver.major}.{ver.minor}.{ver.micro}"
         self.update_status(f"You are currently using Python {current_py}")
-        # Check for correct Python version.
         if ver.major != 3 or ver.minor < 11 or ver.minor >= 13:
             warn_text = (f"You are currently using Python {current_py}.\n"
                          "This version will not work with ofscraper.\n"
@@ -140,7 +147,6 @@ class SetupOfScraperApp:
         if current_py != RECOMMENDED_PYTHON_VERSION:
             self.update_status("Note: The recommended Python version is 3.11.6. If you have Python issues, please install Python 3.11.6.")
         self.update_status("=== Combined System Check & Update ===")
-        # Debug: check where pipx is located.
         pipx_path = shutil.which("pipx")
         self.update_status(f"Debug: pipx is at: {pipx_path}")
         self.check_ofscraper_installation()
@@ -262,7 +268,7 @@ class SetupOfScraperApp:
         return "unknown"
 
     def get_ofscraper_version_from_pipx(self):
-        # First, try pipx list --json.
+        # First attempt: use pipx list --json.
         try:
             result = subprocess.run(["pipx", "list", "--json"],
                                      capture_output=True, text=True, timeout=10)
@@ -396,7 +402,6 @@ class SetupOfScraperApp:
         if "advanced_options" not in config_data or config_data["advanced_options"] is None:
             config_data["advanced_options"] = {}
         adv_options = config_data["advanced_options"]
-
         if adv_options.get("dynamic-mode-default") != "generic":
             adv_options["dynamic-mode-default"] = "generic"
             self.update_status("Set advanced_options.dynamic-mode-default to 'generic'.")
@@ -435,7 +440,7 @@ class SetupOfScraperApp:
                 self.update_status(f"Error opening auth.json: {e}")
 
     def check_key_mode_default(self, config_data):
-        # Always ask for DRM keys info.
+        # Always prompt for DRM keys info.
         cdm_opts = config_data.get("cdm_options", {})
         key_mode = cdm_opts.get("key-mode-default")
         if key_mode != "manual":
@@ -608,6 +613,80 @@ class SetupOfScraperApp:
     def test_ofscraper(self):
         # Open ofscraper in a new terminal window.
         self.open_ofscraper_in_new_terminal()
+
+    def reinstall_ofscraper(self):
+        # Ask if user wants to uninstall first.
+        if not messagebox.askyesno("Reinstall ofscraper", "Do you want to uninstall ofscraper first?"):
+            self.update_status("Uninstallation skipped.")
+        else:
+            # Based on how it was installed, perform uninstall.
+            if self.install_type == "pip":
+                try:
+                    subprocess.run([sys.executable, "-m", "pip", "uninstall", "-y", "ofscraper"],
+                                   check=True, text=True)
+                    self.update_status("ofscraper uninstalled successfully via pip.")
+                except subprocess.CalledProcessError as e:
+                    self.update_status(f"Error uninstalling via pip:\n{e}")
+            elif self.install_type == "pipx":
+                try:
+                    subprocess.run(["pipx", "uninstall", "ofscraper"],
+                                   check=True, text=True)
+                    self.update_status("ofscraper uninstalled successfully via pipx.")
+                except subprocess.CalledProcessError as e:
+                    self.update_status(f"Error uninstalling via pipx:\n{e}")
+            elif self.install_type == "both":
+                method = simpledialog.askinteger("Uninstall ofscraper",
+                                                 "Select uninstall method:\n1) pip\n2) pipx\n3) Both",
+                                                 minvalue=1, maxvalue=3)
+                if method == 1:
+                    try:
+                        subprocess.run([sys.executable, "-m", "pip", "uninstall", "-y", "ofscraper"],
+                                       check=True, text=True)
+                        self.update_status("ofscraper uninstalled successfully via pip.")
+                    except subprocess.CalledProcessError as e:
+                        self.update_status(f"Error uninstalling via pip:\n{e}")
+                elif method == 2:
+                    try:
+                        subprocess.run(["pipx", "uninstall", "ofscraper"],
+                                       check=True, text=True)
+                        self.update_status("ofscraper uninstalled successfully via pipx.")
+                    except subprocess.CalledProcessError as e:
+                        self.update_status(f"Error uninstalling via pipx:\n{e}")
+                elif method == 3:
+                    try:
+                        subprocess.run([sys.executable, "-m", "pip", "uninstall", "-y", "ofscraper"],
+                                       check=True, text=True)
+                        subprocess.run(["pipx", "uninstall", "ofscraper"],
+                                       check=True, text=True)
+                        self.update_status("ofscraper uninstalled successfully via both pip and pipx.")
+                    except subprocess.CalledProcessError as e:
+                        self.update_status(f"Error uninstalling via both methods:\n{e}")
+        # Ask if user wants to reinstall.
+        if messagebox.askyesno("Reinstall ofscraper", "Do you want to reinstall ofscraper?"):
+            # Ask which method to use for install.
+            method = simpledialog.askinteger("Install ofscraper",
+                                             "Select install method:\n1) pip\n2) pipx",
+                                             minvalue=1, maxvalue=2)
+            if method == 1:
+                try:
+                    subprocess.run([sys.executable, "-m", "pip", "install", f"ofscraper=={RECOMMENDED_OS_VERSION}"],
+                                   check=True, text=True)
+                    self.update_status("ofscraper installed successfully via pip.")
+                except subprocess.CalledProcessError as e:
+                    self.update_status(f"Error installing via pip:\n{e}")
+            elif method == 2:
+                try:
+                    subprocess.run(["pipx", "install", f"ofscraper=={RECOMMENDED_OS_VERSION}"],
+                                   check=True, text=True)
+                    self.update_status("ofscraper installed successfully via pipx.")
+                except subprocess.CalledProcessError as e:
+                    self.update_status(f"Error installing via pipx:\n{e}")
+            else:
+                self.update_status("No valid install option selected.")
+        else:
+            self.update_status("Reinstallation skipped.")
+        # After reinstall, re-check installation.
+        self.combined_system_check()
 
 if __name__ == "__main__":
     root = tk.Tk()
