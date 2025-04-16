@@ -15,7 +15,7 @@ import threading
 RECOMMENDED_AIOLIMITER = "aiolimiter==1.1.0"  # Fixes ofscraper ending with "Finish Script"
 RECOMMENDED_DYNAMIC_GENERIC_URL = "https://raw.githubusercontent.com/deviint/onlyfans-dynamic-rules/main/dynamicRules.json"
 DRM_KEYS_INFO_URL = "https://forum.videohelp.com/threads/408031-Dumping-Your-own-L3-CDM-with-Android-Studio/page26#post2766668"
-WRITTEN_GUIDE_URL = "https://example.com/drm_keys_guide"  # Replace with your written guide URL
+WRITTEN_GUIDE_URL = "https://forum.videohelp.com/threads/408031-Dumping-Your-own-L3-CDM-with-Android-Studio/page26#post2766668"  # Replace with your written guide URL
 YOUTUBE_VIDEO_URL = "https://www.youtube.com/watch?v=MeQDCoYLTE0"  # Windows only
 DISCORD_INVITE_URL = "https://discord.gg/wN7uxEVHRK"
 RECOMMENDED_OS_VERSION = "3.12.9"  # Recommended version for ofscraper
@@ -64,14 +64,14 @@ class SetupOfScraperApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Setup ofScraper")
-        self.root.geometry("615x700")
+        self.root.geometry("625x700")
         self.main_frame = ttk.Frame(self.root, padding="10")
         self.main_frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
         # Display the ASCII logo.
         logo_label = tk.Label(self.main_frame, text=ASCII_LOGO, font=("Courier", 10), justify=tk.LEFT)
         logo_label.grid(row=0, column=0, columnspan=2, pady=(5, 10))
         self.install_type = None
-        self.embedded_proc = None  # For embedded terminal process (not used here)
+        self.embedded_proc = None  # (Not used in this script)
         self.embedded_terminal_frame = None
         self.create_widgets()
 
@@ -123,12 +123,13 @@ class SetupOfScraperApp:
         self.log_area.see(tk.END)
 
     def combined_system_check(self):
-        # Debug: Report current Python interpreter.
+        # Report which Python is running the script.
         self.update_status(f"Script is running with: {sys.executable}")
         # Report current Python version.
         ver = sys.version_info
         current_py = f"{ver.major}.{ver.minor}.{ver.micro}"
         self.update_status(f"You are currently using Python {current_py}")
+        # Check for correct Python version.
         if ver.major != 3 or ver.minor < 11 or ver.minor >= 13:
             warn_text = (f"You are currently using Python {current_py}.\n"
                          "This version will not work with ofscraper.\n"
@@ -139,6 +140,9 @@ class SetupOfScraperApp:
         if current_py != RECOMMENDED_PYTHON_VERSION:
             self.update_status("Note: The recommended Python version is 3.11.6. If you have Python issues, please install Python 3.11.6.")
         self.update_status("=== Combined System Check & Update ===")
+        # Debug: check where pipx is located.
+        pipx_path = shutil.which("pipx")
+        self.update_status(f"Debug: pipx is at: {pipx_path}")
         self.check_ofscraper_installation()
         version = self.get_ofscraper_version()
         self.update_status(f"Detected ofscraper version: {version}")
@@ -258,6 +262,7 @@ class SetupOfScraperApp:
         return "unknown"
 
     def get_ofscraper_version_from_pipx(self):
+        # First, try pipx list --json.
         try:
             result = subprocess.run(["pipx", "list", "--json"],
                                      capture_output=True, text=True, timeout=10)
@@ -269,11 +274,24 @@ class SetupOfScraperApp:
                     if version:
                         return version
                     else:
-                        self.update_status("pipx list did not include a version for ofscraper.")
+                        self.update_status("pipx list did not include a version for ofscraper; falling back to pipx runpip.")
             else:
                 self.update_status("Error running pipx list --json for ofscraper.")
         except Exception as e:
-            self.update_status(f"Exception when checking version via pipx: {e}")
+            self.update_status(f"Exception when checking version via pipx list: {e}")
+        # Fallback: use pipx runpip ofscraper show ofscraper.
+        try:
+            result = subprocess.run(["pipx", "runpip", "ofscraper", "show", "ofscraper"],
+                                     capture_output=True, text=True, timeout=10)
+            if result.returncode == 0:
+                for line in result.stdout.splitlines():
+                    if line.startswith("Version:"):
+                        return line.split(":",1)[1].strip()
+                self.update_status("pipx runpip did not return version information.")
+            else:
+                self.update_status("Error running pipx runpip show ofscraper.")
+        except Exception as e:
+            self.update_status(f"Exception when checking version via pipx runpip: {e}")
         return "unknown"
 
     def get_ofscraper_version(self):
@@ -374,17 +392,14 @@ class SetupOfScraperApp:
             self.update_status(f"Failed to read config.json: {e}")
             return
 
-        # --- Update values ---
-        # Ensure "advanced_options" exists and is a dict.
+        # --- Update configuration values ---
         if "advanced_options" not in config_data or config_data["advanced_options"] is None:
             config_data["advanced_options"] = {}
         adv_options = config_data["advanced_options"]
 
-        # Update dynamic-mode-default to "generic"
         if adv_options.get("dynamic-mode-default") != "generic":
             adv_options["dynamic-mode-default"] = "generic"
             self.update_status("Set advanced_options.dynamic-mode-default to 'generic'.")
-        # Update custom_values to include DYNAMIC_GENERIC_URL
         if "custom_values" not in adv_options or adv_options["custom_values"] is None:
             adv_options["custom_values"] = {"DYNAMIC_GENERIC_URL": RECOMMENDED_DYNAMIC_GENERIC_URL}
             self.update_status("Set advanced_options.custom_values with DYNAMIC_GENERIC_URL.")
@@ -398,12 +413,10 @@ class SetupOfScraperApp:
             with open(config_path, "w", encoding="utf-8") as f:
                 json.dump(config_data, f, indent=2)
             self.update_status("Config.json updated successfully.")
-            # Now, always prompt for DRM key info.
             self.check_key_mode_default(config_data)
         except Exception as e:
             self.update_status(f"Failed to update config.json: {e}")
 
-        # Offer to open auth.json
         auth_prompt = (
             "If your auth is still failing, clear your browser's cookies and cache.\n"
             "DO NOT USE the browser extension—get your auth manually and enter it into auth.json directly.\n\n"
@@ -422,7 +435,7 @@ class SetupOfScraperApp:
                 self.update_status(f"Error opening auth.json: {e}")
 
     def check_key_mode_default(self, config_data):
-        # Regardless of current setting, always ask if DRM key info is needed.
+        # Always ask for DRM keys info.
         cdm_opts = config_data.get("cdm_options", {})
         key_mode = cdm_opts.get("key-mode-default")
         if key_mode != "manual":
